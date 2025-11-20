@@ -19,8 +19,9 @@ def login(driver):
 
 service = Service(ChromeDriverManager().install())
 op = webdriver.ChromeOptions()
+op.add_argument("--headless=new")
 driver = webdriver.Chrome(options = op, service = service)
 url = "https://app.betterimpact.com/Login/admin"
 driver.get(url)
-
+print(driver.page_source)
 time.sleep(10)
