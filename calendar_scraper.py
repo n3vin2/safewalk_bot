@@ -1,4 +1,5 @@
 import os
+import json
 from datetime import datetime
 from dotenv import load_dotenv
 from selenium import webdriver
@@ -34,10 +35,15 @@ role_index_mapping = {
 
 shift_cnt = len(time_index_mapping.keys())
 role_cnt = len(role_index_mapping.keys())
-grid = []
+
+database = {
+    "Dispatchers": [],
+    "Volunteers": []
+}
+grid = database["Volunteers"]
 for i in range(shift_cnt):
     if i < shift_cnt - 1:
-        grid.append([0] * (role_cnt - 1))
+        grid.append([0] * role_cnt)
     else:
         grid.append([0] * (role_cnt - 2))
 
@@ -81,22 +87,28 @@ def getVolunteers(driver):
     for day in soup.find_all("div", class_="marginAllHalf"):
         current_date = datetime.now().strftime("%Y-%m-%d")
         if day.table["data-date"] == current_date:
-            shift_time = None
             shift_type = None
             for cell in day.table.tbody.find_all("tr"):
-                #print(cell["class"])
                 if "shiftRow" in cell["class"]:
-                    shift_type_text = cell.find("td", "activityNameColumn").a.text
+                    shift_type_text = cell.find("td", class_="activityNameColumn").a.text
                     if shift_type_text.endswith("Dispatcher"):
-                        print(shift_type_text)
+                        shift_type = "d"
                     else:
-                        pass
-                    #print(shift_type_html.a.text)
-                print("shiftRow" in cell["class"])
+                        shift_time_element = cell.select_one("td.timeColumn.startTime").text
+                        shift_type = shift_type_text.split(" ")[-2]
+
+                        shift_type = role_index_mapping[shift_type]
+                        shift_time = time_index_mapping[shift_time_element]
+
+                        numCapacity = cell.select_one('td.numberColumn:has(span[title="Maximum Volunteers"])').span.text
+                        num_signedUp = cell.select_one("td.numberColumn.shiftConfirmedTd").span.text
+                        grid[shift_time][shift_type] = num_signedUp + "/" + numCapacity
+                if shift_type == "d" and "volunteerRow" in cell["class"]:
+                    dispatcherName = cell.find("td", class_="firstName").text.strip()
+                    database["Dispatchers"].append(dispatcherName)
             return 0
         #print(day.prettify())
     #print(soup.prettify())
-    #time.sleep(100000)
     return 1
 
 service = Service(ChromeDriverManager().install())
@@ -109,4 +121,6 @@ if getVolunteers(driver) == 0:
     pass
 else:
     pass
-time.sleep(10)
+
+with open("volunteer_schedule.json", "w", encoding="utf-8") as file:
+    file.write(json.dumps(database))
