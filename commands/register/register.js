@@ -9,13 +9,13 @@ export const execute = async (interaction) => {
         let data = JSON.parse(rawData);
         if (!(interaction.guildId in data)) {
             console.log('new guild');
-            data = {...data, [interaction.guildId]: []};
+            data = {...data, [interaction.guildId]: {}};
         }
-        if (data[interaction.guildId].includes(interaction.channelId)) {
+        if (interaction.channelId in data[interaction.guildId]) {
             await interaction.reply("This channel has already been set for pings.");
             return;
         }
-        data[interaction.guildId] = [...data[interaction.guildId], interaction.channelId];
+        data[interaction.guildId] = {...data[interaction.guildId], [interaction.channelId]: null};
         await writeFile("registered_channels.json", JSON.stringify(data));
         await interaction.reply("This channel has been successfully set for pings!");
         
