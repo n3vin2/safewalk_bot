@@ -36,17 +36,6 @@ role_index_mapping = {
 shift_cnt = len(time_index_mapping.keys())
 role_cnt = len(role_index_mapping.keys())
 
-database = {
-    "Dispatchers": [],
-    "Volunteers": []
-}
-grid = database["Volunteers"]
-for i in range(shift_cnt):
-    if i < shift_cnt - 1:
-        grid.append([0] * role_cnt)
-    else:
-        grid.append([0] * (role_cnt - 2))
-
 def login(driver):
     load_dotenv()
     username = os.getenv("username")
@@ -109,7 +98,7 @@ def getVolunteers(driver):
             return 0
         #print(day.prettify())
     #print(soup.prettify())
-    return 1
+    return -1
 
 service = Service(ChromeDriverManager().install())
 op = webdriver.ChromeOptions()
@@ -117,10 +106,21 @@ op.add_argument("--headless=new")
 driver = webdriver.Chrome(options = op, service = service)
 driver.maximize_window()
 login(driver)
-if getVolunteers(driver) == 0:
-    pass
-else:
-    pass
 
-with open("volunteer_schedule.json", "w", encoding="utf-8") as file:
-    file.write(json.dumps(database))
+while True:
+    database = {
+        "Dispatchers": [],
+        "Volunteers": []
+    }
+    grid = database["Volunteers"]
+    for i in range(shift_cnt):
+        if i < shift_cnt - 1:
+            grid.append([0] * role_cnt)
+        else:
+            grid.append([0] * (role_cnt - 2))
+    if getVolunteers(driver) == 0:
+        with open("volunteer_schedule.json", "w", encoding="utf-8") as file:
+            file.write(json.dumps(database))
+    else:
+        with open("volunteer_schedule.json", "w", encoding="utf-8") as file:
+            file.write(json.dumps(None))
