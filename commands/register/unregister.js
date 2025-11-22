@@ -7,11 +7,11 @@ export const execute = async (interaction) => {
     try {
         const rawData = await readFile("registered_channels.json", "utf-8");
         let data = JSON.parse(rawData);
-        if (!(interaction.guildId in data) || !(data[interaction.guildId].includes(interaction.channelId))) {
+        if (!(interaction.guildId in data) || !(interaction.channelId in data[interaction.guildId])) {
             await interaction.reply("This channel was not set for pings.");
             return;
         }
-        data[interaction.guildId] = data[interaction.guildId].filter(id => id != interaction.channelId);
+        delete data[interaction.guildId][interaction.channelId]
         await writeFile("registered_channels.json", JSON.stringify(data));
         await interaction.reply("This channel will no longer be set for pings.");
     } catch (exception) {

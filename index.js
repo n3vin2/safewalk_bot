@@ -1,10 +1,16 @@
 import { Client, Collection, Events, GatewayIntentBits, MessageFlags } from 'discord.js';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import fs from "node:fs";
 import path from 'node:path';
 import { channel } from 'node:diagnostics_channel';
+
+const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const shiftTimes = ["7PM:", "8PM:", "9PM:"];
+const spacings = [4, 5, 6, 6]
+
+let currentDay = new Date();
 
 const require = createRequire(import.meta.url);
 
@@ -57,8 +63,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
 	}
 	const command = interaction.client.commands.get(interaction.commandName);
 	const channel = await client.channels.fetch(interaction.channelId);
-	//console.log(channel);
-	//channel.send("peepeepoopoo");
 
 	if (!command) {
 		console.error(`No command matching ${interaction.commandName} was found.`);
@@ -83,22 +87,77 @@ client.on(Events.InteractionCreate, async (interaction) => {
 	}
 });
 
+function getColor(expression) {
+	const val = eval(expression);
+	if (val == 0) {
+		return "🟩";
+	} else if (val > 0 && val < 1) {
+		return "🟨";
+	} else {
+		return "🟥";
+	}
+}
+
+function getMessage(schedule) {
+	const today = new Date();
+
+	const firstPart =  `
+Hi @Patroller, happy ${days[today.getDay()]}!\n
+Dispatcher: ${schedule.Dispatchers.join(", ")}\n
+🟩 = Vacant
+🟨 = Partially Filled
+🟥 = Filled\n
+P = Patroller
+S = Study
+Te = Trainee 
+Tr = Trainer\n
+              P          S         Te        Tr
+`;
+	let secondPart = ""
+	for (let i = 0; i < shiftTimes.length; i++) {
+		secondPart += `${shiftTimes[i]}`;
+		const volunteers = schedule.Volunteers[i];
+		volunteers.forEach((expression, j) => {
+			secondPart += " ".repeat(spacings[j]) + getColor(expression);
+		});
+		secondPart += "\n\n";
+	}
+	return firstPart + secondPart;
+}
+
 async function clientSetup() {
 	// Log in to Discord with your client's token
 	await client.login(token);
 
 	setInterval(async () => {
-		const rawData = await readFile("registered_channels.json", "utf-8");
-		const data = JSON.parse(rawData);
-		Object.keys(data).forEach(async (guildId) => {
-			console.log(data, guildId);
-			data[guildId].forEach(async (channelId) => {
-				const channel = await client.channels.fetch(channelId);
-				channel.send("peepeepoopoo");
-			});
-		});
-		console.log("not waiting")
-	}, 1000 * 60 * 5);
+		const now = new Date();
+		if (now.getHours() >= 12) {
+			const database = await readFile("volunteer_schedule.json", "utf-8");
+			const schedule = JSON.parse(database);
+			if (schedule !== null) {
+				const rawData = await readFile("registered_channels.json", "utf-8");
+				const data = JSON.parse(rawData);
+				Object.keys(data).forEach(async (guildId) => {
+					console.log(data, guildId);
+					Object.keys(data[guildId]).forEach(async (channelId) => {
+							const channel = await client.channels.fetch(channelId);
+							const messageId = data[guildId][channelId]
+
+							if (now.getDay() !== currentDay.getDay() || messageId === null) {
+								const newMessage = await channel.send(getMessage(schedule));
+								const newMessageId = newMessage.id;
+								data[guildId][channelId] = newMessageId;
+								await writeFile("registered_channels.json", JSON.stringify(data));
+							} else {
+								const message = await channel.messages.fetch(messageId);
+								message.edit(getMessage(schedule));
+							}
+						}
+					)
+				});
+			}
+		}
+	}, 3000 * 60 * 5);
 }
 
 clientSetup();
