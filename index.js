@@ -131,31 +131,33 @@ async function clientSetup() {
 
 	setInterval(async () => {
 		const now = new Date();
-		if (/* now.getHours() >= 12 */ true) {
+		if (now.getHours() >= 12) {
 			const database = await readFile("volunteer_schedule.json", "utf-8");
 			const schedule = JSON.parse(database);
-			if (/* schedule !== null */ true) {
+			if (schedule !== null) {
 				const rawData = await readFile("registered_channels.json", "utf-8");
 				const data = JSON.parse(rawData);
 				Object.keys(data).forEach(async (guildId) => {
 					console.log(data, guildId);
 					Object.keys(data[guildId]).forEach(async (channelId) => {
-						const channel = await client.channels.fetch(channelId);
-						const messageId = data[guildId][channelId]
+							const channel = await client.channels.fetch(channelId);
+							const messageId = data[guildId][channelId]
 
-						if (now.getDay() !== currentDay.getDay() || messageId === null) {
-							const newMessageId = await channel.send("some message");
-							data[guildId][channelId] = newMessageId;
-							await writeFile("registered_channels.json", JSON.stringify(data));
-						} else {
-							const message = await channel.messages.fetch(messageId);
-							message.edit("now it is edited");
+							if (now.getDay() !== currentDay.getDay() || messageId === null) {
+								const newMessage = await channel.send(getMessage(schedule));
+								const newMessageId = newMessage.id;
+								data[guildId][channelId] = newMessageId;
+								await writeFile("registered_channels.json", JSON.stringify(data));
+							} else {
+								const message = await channel.messages.fetch(messageId);
+								message.edit(getMessage(schedule));
+							}
 						}
-					});
+					)
 				});
 			}
 		}
-	}, 1000 /* * 60 * 5 */);
+	}, 3000 * 60 * 5);
 }
 
 clientSetup();
