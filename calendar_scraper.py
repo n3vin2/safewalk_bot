@@ -27,6 +27,9 @@ def login(driver):
     driver.get(url)
 
     # logging in
+    WebDriverWait(driver, TIMEOUT).until(
+            expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "#UserName"))
+    )
     user_element = driver.find_element(By.CSS_SELECTOR, "#UserName")
     password_element = driver.find_element(By.CSS_SELECTOR, "#Password")
 
@@ -57,7 +60,7 @@ def getVolunteers(driver):
 
 service = Service(ChromeDriverManager().install())
 op = webdriver.ChromeOptions()
-#op.add_argument("--headless=new")
+op.add_argument("--headless=new")
 driver = webdriver.Chrome(options = op, service = service)
 driver.maximize_window()
 login(driver)
