@@ -127,3 +127,4 @@ while True:
     else:
         with open("volunteer_schedule.json", "w", encoding="utf-8") as file:
             file.write(json.dumps(None))
+    time.sleep(60 * 5);
