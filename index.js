@@ -102,11 +102,11 @@ function getColor(expression) {
 	}
 }
 
-function getMessage(schedule) {
+function getMessage(schedule, roleId) {
 	const today = new Date();
 
 	const firstPart =  `
-Hi @Patroller, happy ${days[today.getDay()]}!\n
+Hi <@&${roleId}>, happy ${days[today.getDay()]}!\n
 Dispatcher: ${schedule.Dispatchers.join(", ")}\n
 🟩 = Vacant
 🟨 = Partially Filled
@@ -138,7 +138,7 @@ async function clientSetup() {
 
 	setInterval(async () => {
 		const now = new Date();
-		if (now.getHours() >= 12) {
+		if (now.getHours() >= 0) {
 			const database = await readFile("volunteer_schedule.json", "utf-8");
 			const schedule = JSON.parse(database);
 			if (schedule !== null) {
@@ -148,24 +148,28 @@ async function clientSetup() {
 					console.log(data, guildId);
 					Object.keys(data[guildId]).forEach(async (channelId) => {
 							const channel = await client.channels.fetch(channelId);
+							const guild = await client.guilds.fetch(guildId);
+							const roles = await guild.roles.fetch();
+							const role = roles.find(r => r.name === "Patroller");
+							console.log(role.id);
 							const messageId = data[guildId][channelId]
 
 							if (now.getDay() !== currentDay.getDay() || messageId === null) {
-								const newMessage = await channel.send(getMessage(schedule));
+								const newMessage = await channel.send(getMessage(schedule, role.id));
 								const newMessageId = newMessage.id;
 								data[guildId][channelId] = newMessageId;
 								currentDay = now;
 								await writeFile("registered_channels.json", JSON.stringify(data));
 							} else {
 								const message = await channel.messages.fetch(messageId);
-								message.edit(getMessage(schedule));
+								message.edit(getMessage(schedule, role.id));
 							}
 						}
 					)
 				});
 			}
 		}
-	}, 3000 * 60 * 5);
+	}, 3000);
 }
 
 clientSetup();
