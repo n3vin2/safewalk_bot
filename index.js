@@ -154,6 +154,7 @@ async function clientSetup() {
 								const newMessage = await channel.send(getMessage(schedule));
 								const newMessageId = newMessage.id;
 								data[guildId][channelId] = newMessageId;
+								currentDay = now;
 								await writeFile("registered_channels.json", JSON.stringify(data));
 							} else {
 								const message = await channel.messages.fetch(messageId);
