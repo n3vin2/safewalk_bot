@@ -138,7 +138,7 @@ async function clientSetup() {
 
 	setInterval(async () => {
 		const now = new Date();
-		if (now.getHours() >= 0) {
+		if (now.getHours() >= 12) {
 			const database = await readFile("volunteer_schedule.json", "utf-8");
 			const schedule = JSON.parse(database);
 			if (schedule !== null) {
@@ -169,7 +169,7 @@ async function clientSetup() {
 				});
 			}
 		}
-	}, 3000);
+	}, 1000 * 60 * 5);
 }
 
 clientSetup();
