@@ -8,11 +8,27 @@ export const execute = async (interaction) => {
         if (interaction.user.id === process.env.dev_id || interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             const rawData = await readFile("registered_channels.json", "utf-8");
             let data = JSON.parse(rawData);
-            if (!(interaction.guildId in data) || !(interaction.channelId in data[interaction.guildId])) {
+
+            let newGuildObj = null;
+            data.forEach(guild => {
+                if (guild.guildId === interaction.guildId) {
+                    guild.channels.forEach(channel => {
+                        if (channel.channelId === interaction.channelId) {
+                            newGuildObj = guild;
+                        }
+                    });
+                }
+            });
+            if (!newGuildObj) {
                 await interaction.reply("This channel was not set for pings.");
                 return;
             }
-            delete data[interaction.guildId][interaction.channelId]
+            
+            newGuildObj = {
+                ...newGuildObj,
+                channels: newGuildObj.channels.filter(channel => channel.channelId !== interaction.channelId)
+            }
+            data = [...data.filter(guild => guild.guildId !== interaction.guildId), newGuildObj];
             await writeFile("registered_channels.json", JSON.stringify(data));
             await interaction.reply("This channel will no longer be set for pings.");
         } else {
