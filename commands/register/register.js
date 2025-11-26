@@ -8,15 +8,41 @@ export const execute = async (interaction) => {
         if (interaction.user.id === process.env.dev_id || interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             const rawData = await readFile("registered_channels.json", "utf-8");
             let data = JSON.parse(rawData);
-            if (!(interaction.guildId in data)) {
-                console.log('new guild');
-                data = {...data, [interaction.guildId]: {}};
+
+            let guildObject = null;
+            data.forEach(guild => {
+                if (interaction.guildId === guild.guildId) {
+                    guildObject = guild;
+                }
+            });
+            if (guildObject) {
+                let channelExist = false;
+                guildObject.channels.forEach(channel => {
+                    if (interaction.channelId === channel.channelId) {
+                        channelExist = true;
+                    }
+                });
+                if (channelExist) {
+                    await interaction.reply("This channel has already been set for pings.");
+                    return;
+                }
+            } else {
+                guildObject = {
+                    guildId: interaction.guildId,
+                    channels: []
+                };
             }
-            if (interaction.channelId in data[interaction.guildId]) {
-                await interaction.reply("This channel has already been set for pings.");
-                return;
+            guildObject = {
+                ...guildObject,
+                channels: [
+                    ...guildObject.channels,
+                    {
+                        channelId: interaction.channelId,
+                        messageId: null,
+                    }
+                ]
             }
-            data[interaction.guildId] = {...data[interaction.guildId], [interaction.channelId]: null};
+            data = [...data.filter(guild => guild.guildId !== guildObject.guildId), guildObject];
             await writeFile("registered_channels.json", JSON.stringify(data));
             await interaction.reply("This channel has been successfully set for pings!");
 
