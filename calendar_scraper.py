@@ -112,6 +112,7 @@ login(driver)
 
 while True:
     database = {
+        "Active": False,
         "Dispatchers": [],
         "Volunteers": []
     }
@@ -122,10 +123,12 @@ while True:
         else:
             grid.append([0] * (role_cnt - 2))
     if getVolunteers(driver) == 0:
+        database["Active"] = True
         with open("volunteer_schedule.json", "w", encoding="utf-8") as file:
             file.write(json.dumps(database))
     else:
+        database["Active"] = False
         with open("volunteer_schedule.json", "w", encoding="utf-8") as file:
-            file.write(json.dumps(None))
+            file.write(json.dumps(database))
     print(f"[{str(datetime.now())}] loop done")
-    time.sleep(60 * 5);
+    time.sleep(60 * 5)
