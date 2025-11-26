@@ -1,6 +1,5 @@
 import { Client, Collection, Events, GatewayIntentBits, MessageFlags } from 'discord.js';
 import { fileURLToPath } from 'node:url';
-import { createRequire } from 'node:module';
 import { readFile, writeFile } from 'node:fs/promises';
 import fs from "node:fs";
 import path from 'node:path';
@@ -9,10 +8,6 @@ import { channel } from 'node:diagnostics_channel';
 const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const shiftTimes = ["7PM:", "8PM:", "9PM:"];
 const spacings = [4, 5, 6, 6]
-
-let currentDay = new Date();
-
-//const require = createRequire(import.meta.url);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -141,35 +136,37 @@ async function clientSetup() {
 		if (now.getHours() >= 12) {
 			const database = await readFile("volunteer_schedule.json", "utf-8");
 			const schedule = JSON.parse(database);
-			if (schedule !== null) {
+			if (schedule.Active) {
 				const rawData = await readFile("registered_channels.json", "utf-8");
 				const data = JSON.parse(rawData);
-				Object.keys(data).forEach(async (guildId) => {
-					console.log(data, guildId);
-					Object.keys(data[guildId]).forEach(async (channelId) => {
-							const channel = await client.channels.fetch(channelId);
-							const guild = await client.guilds.fetch(guildId);
-							const roles = await guild.roles.fetch();
-							const role = roles.find(r => r.name === "Patroller");
-							console.log(role.id);
-							const messageId = data[guildId][channelId]
-
-							if (now.getDay() !== currentDay.getDay() || messageId === null) {
+				data.forEach(async (guildObject) => {
+					const guild = await client.guilds.fetch(guildObject.guildId);
+					const roles = await guild.roles.fetch();
+					const role = roles.find(r => r.name === "Patroller");
+					guildObject.channels.forEach(async (channelObject) => {
+						const channel = await client.channels.fetch(channelObject.channelId)
+						if (channelObject.messageId === null) {
+							const newMessage = await channel.send(getMessage(schedule, role.id));
+							const newMessageId = newMessage.id;
+							channelObject.messageId = newMessageId;
+							await writeFile("registered_channels.json", JSON.stringify(data));
+						} else {
+							const message = await channel.messages.fetch(channelObject.messageId);
+							const postDate = new Date(message.createdTimestamp);
+							if (postDate.getDay() !== now.getDay()) {
 								const newMessage = await channel.send(getMessage(schedule, role.id));
 								const newMessageId = newMessage.id;
-								data[guildId][channelId] = newMessageId;
-								currentDay = now;
+								channelObject.messageId = newMessageId;
 								await writeFile("registered_channels.json", JSON.stringify(data));
 							} else {
-								const message = await channel.messages.fetch(messageId);
 								message.edit(getMessage(schedule, role.id));
 							}
 						}
-					)
+					});
 				});
 			}
 		}
-	}, 1000 * 60 * 5);
+	}, 5000/*  * 60 * 5 */);
 }
 
 clientSetup();
