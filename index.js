@@ -7,7 +7,10 @@ import { channel } from 'node:diagnostics_channel';
 
 const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const shiftTimes = ["7PM:", "8PM:", "9PM:"];
-const spacings = [4, 5, 6, 6]
+const shiftTypes = ["Patroller", "Study", "Trainee", "Trainer"];
+const shiftTypesAbbreviated = ["P", "S", "Te", "Tr"];
+const shiftSpacings = [4, 5, 6, 6];
+const headerShiftSpacings = [14, 10, 9, 8];
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -97,6 +100,20 @@ function getColor(expression) {
 	}
 }
 
+function getMiddlePart(schedule) {
+	let legend = "";
+	let header = "";
+	let i = 0;
+	schedule.Available_Shifts.forEach((shift, index) => {
+		if (shift) {
+			legend += `${shiftTypesAbbreviated[index]} = ${shiftTypes[index]}\n`;
+			header += `${" ".repeat(headerShiftSpacings[i])}${shiftTypesAbbreviated[index]}`;
+			i++;
+		}
+	});
+	return legend + "\n" + header;
+}
+
 function getMessage(schedule, roleId) {
 	const today = new Date();
 
@@ -106,18 +123,24 @@ Dispatcher: ${schedule.Dispatchers.join(", ")}\n
 🟩 = Vacant
 🟨 = Partially Filled
 🟥 = Filled\n
-P = Patroller
-S = Study
-Te = Trainee 
-Tr = Trainer\n
-              P          S         Te        Tr
+${getMiddlePart(schedule)}
 `;
+	/*               P          S         Te        Tr */
 	let secondPart = ""
 	for (let i = 0; i < shiftTimes.length; i++) {
 		secondPart += `${shiftTimes[i]}`;
 		const volunteers = schedule.Volunteers[i];
-		volunteers.forEach((expression, j) => {
-			secondPart += " ".repeat(spacings[j]) + getColor(expression);
+
+		let first = true;
+		volunteers.forEach((expression, index) => {
+			if (schedule.Available_Shifts[index]) {
+				if (first) {
+					secondPart += " ".repeat(shiftSpacings[0]) + getColor(expression);
+					first = !first;
+				} else {
+					secondPart += " ".repeat(shiftSpacings[index]) + getColor(expression);
+				}
+			}
 		});
 		secondPart += "\n\n";
 	}
