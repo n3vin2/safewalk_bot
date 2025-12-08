@@ -85,7 +85,6 @@ def getVolunteers(driver):
                 expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "#ScheduleDetailsHolder"))
             )
             scheduleDetails = driver.find_element(By.CSS_SELECTOR, "#ScheduleDetailsHolder")
-            time.sleep(5)
 
             WebDriverWait(scheduleDetails, TIMEOUT).until(
                 expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "#ExpandAllShiftsButton"))
@@ -93,7 +92,6 @@ def getVolunteers(driver):
             expandButton = driver.find_element(By.CSS_SELECTOR, "#ExpandAllShiftsButton")
             expand_button_loaded = True
             expandButton.click()
-            #time.sleep(50)
 
             WebDriverWait(driver, TIMEOUT).until(
                 expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span.ui-button-icon-primary.ui-icon.ui-icon-circle-minus"))
@@ -115,7 +113,7 @@ def getVolunteers(driver):
     soup = BeautifulSoup(driver.page_source, "lxml")
     for day in soup.find_all("div", class_="marginAllHalf"):
         current_date = datetime.now().strftime("%Y-%m-%d")
-        if day.table["data-date"] == current_date or True:
+        if day.table["data-date"] == current_date:
             shift_type = None
             for cell in day.table.tbody.find_all("tr"):
                 if "shiftRow" in cell["class"]:
@@ -141,7 +139,7 @@ def getVolunteers(driver):
 
 service = Service(ChromeDriverManager().install())
 op = webdriver.ChromeOptions()
-#op.add_argument("--headless=new")
+op.add_argument("--headless=new")
 driver = webdriver.Chrome(options = op, service = service)
 driver.maximize_window()
 login(driver)
@@ -169,5 +167,4 @@ while True:
         with open("volunteer_schedule.json", "w", encoding="utf-8") as file:
             file.write(json.dumps(database))
     print(f"[{str(datetime.now())}] loop done")
-    exit()
     time.sleep(60 * 5)
