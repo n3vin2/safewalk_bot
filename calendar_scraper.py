@@ -18,7 +18,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 import time
 
-TIMEOUT = 1000000000000000000
+TIMEOUT = 60
 
 time_index_mapping = {
     "7:00 PM": 0,
@@ -45,9 +45,15 @@ def login(driver):
     driver.get(url)
 
     # logging in
-    WebDriverWait(driver, TIMEOUT).until(
-            expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "#UserName"))
-    )
+    username_input_loaded = False
+    while not username_input_loaded:
+        try:
+            WebDriverWait(driver, TIMEOUT).until(
+                expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "#UserName"))
+            )
+            username_input_loaded = True
+        except:
+            driver.refresh()
     user_element = driver.find_element(By.CSS_SELECTOR, "#UserName")
     password_element = driver.find_element(By.CSS_SELECTOR, "#Password")
 
@@ -59,26 +65,57 @@ def login(driver):
     pass
 
 def getVolunteers(driver):
-    WebDriverWait(driver, TIMEOUT).until(
-        expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a.favouriteLink"))
-    )
+    fav_link_loaded = False
+    while not fav_link_loaded:
+        try:
+            WebDriverWait(driver, TIMEOUT).until(
+                expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a.favouriteLink"))
+            )
+            fav_link_loaded = True
+        except:
+            driver.refresh()
     favLink = driver.find_element(By.CSS_SELECTOR, "a.favouriteLink")
     favLink.click()
 
-    WebDriverWait(driver, TIMEOUT).until(
-        expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "#ExpandAllShiftsButton"))
-    )
-    expandButton = driver.find_element(By.CSS_SELECTOR, "#ExpandAllShiftsButton")
-    expandButton.click()
+    fully_loaded = False
+    while not fully_loaded:
+        expand_button_loaded = False
+        try:
+            WebDriverWait(driver, TIMEOUT).until(
+                expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "#ScheduleDetailsHolder"))
+            )
+            scheduleDetails = driver.find_element(By.CSS_SELECTOR, "#ScheduleDetailsHolder")
+            time.sleep(5)
 
-    WebDriverWait(driver, TIMEOUT).until(
-        expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span.ui-button-icon-primary.ui-icon.ui-icon-circle-minus"))
-    )
+            WebDriverWait(scheduleDetails, TIMEOUT).until(
+                expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "#ExpandAllShiftsButton"))
+            )
+            expandButton = driver.find_element(By.CSS_SELECTOR, "#ExpandAllShiftsButton")
+            expand_button_loaded = True
+            expandButton.click()
+            #time.sleep(50)
+
+            WebDriverWait(driver, TIMEOUT).until(
+                expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span.ui-button-icon-primary.ui-icon.ui-icon-circle-minus"))
+            )
+            fully_loaded = True
+        except:
+            if not expand_button_loaded:
+                try:
+                    WebDriverWait(scheduleDetails, TIMEOUT).until(
+                        expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "div.notice"))
+                    )
+                    return -1
+                except:
+                    driver.refresh()
+            else:
+                driver.refresh()
+
 
     soup = BeautifulSoup(driver.page_source, "lxml")
     for day in soup.find_all("div", class_="marginAllHalf"):
         current_date = datetime.now().strftime("%Y-%m-%d")
-        if day.table["data-date"] == current_date:
+        if day.table["data-date"] == current_date or True:
             shift_type = None
             for cell in day.table.tbody.find_all("tr"):
                 if "shiftRow" in cell["class"]:
@@ -92,6 +129,7 @@ def getVolunteers(driver):
                         shift_type = role_index_mapping[shift_type]
                         shift_time = time_index_mapping[shift_time_element]
 
+                        database["Available_Shifts"][shift_type] = 1
                         numCapacity = cell.select_one('td.numberColumn:has(span[title="Maximum Volunteers"])').span.text
                         num_signedUp = cell.select_one("td.numberColumn.shiftConfirmedTd").span.text
                         grid[shift_time][shift_type] = num_signedUp + "/" + numCapacity
@@ -99,13 +137,11 @@ def getVolunteers(driver):
                     dispatcherName = cell.find("td", class_="firstName").text.strip()
                     database["Dispatchers"].append(dispatcherName)
             return 0
-        #print(day.prettify())
-    #print(soup.prettify())
     return -1
 
 service = Service(ChromeDriverManager().install())
 op = webdriver.ChromeOptions()
-op.add_argument("--headless=new")
+#op.add_argument("--headless=new")
 driver = webdriver.Chrome(options = op, service = service)
 driver.maximize_window()
 login(driver)
@@ -113,9 +149,11 @@ login(driver)
 while True:
     database = {
         "Active": False,
+        "Available_Shifts": [],
         "Dispatchers": [],
         "Volunteers": []
     }
+    database["Available_Shifts"] = [0] * role_cnt
     grid = database["Volunteers"]
     for i in range(shift_cnt):
         if i < shift_cnt - 1:
@@ -131,4 +169,5 @@ while True:
         with open("volunteer_schedule.json", "w", encoding="utf-8") as file:
             file.write(json.dumps(database))
     print(f"[{str(datetime.now())}] loop done")
+    exit()
     time.sleep(60 * 5)
