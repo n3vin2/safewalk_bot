@@ -1,24 +1,33 @@
-import { SlashCommandBuilder, PermissionsBitField } from "discord.js";
+import { SlashCommandBuilder, PermissionsBitField, ChatInputCommandInteraction } from "discord.js";
 import { readFile, writeFile } from "node:fs/promises";
 
 export const data = new SlashCommandBuilder().setName("register").setDescription("Set daily shift pings for this server.");
 
 export const execute = async (interaction) => {
+    const channelId = interaction.channelId;
+    const guildId = interaction.guildId;
+    const isAdmin = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
+    let userId;
+    if (interaction instanceof ChatInputCommandInteraction) {
+        userId = interaction.user.id;
+    } else {
+        userId = interaction.author.id;
+    }
     try {
-        if (interaction.user.id === process.env.dev_id || interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+        if (userId === process.env.dev_id || isAdmin) {
             const rawData = await readFile("registered_channels.json", "utf-8");
             let data = JSON.parse(rawData);
 
             let guildObject = null;
             data.forEach(guild => {
-                if (interaction.guildId === guild.guildId) {
+                if (guildId === guild.guildId) {
                     guildObject = guild;
                 }
             });
             if (guildObject) {
                 let channelExist = false;
                 guildObject.channels.forEach(channel => {
-                    if (interaction.channelId === channel.channelId) {
+                    if (channelId === channel.channelId) {
                         channelExist = true;
                     }
                 });
@@ -28,7 +37,7 @@ export const execute = async (interaction) => {
                 }
             } else {
                 guildObject = {
-                    guildId: interaction.guildId,
+                    guildId: guildId,
                     channels: []
                 };
             }
@@ -37,7 +46,7 @@ export const execute = async (interaction) => {
                 channels: [
                     ...guildObject.channels,
                     {
-                        channelId: interaction.channelId,
+                        channelId: channelId,
                         messageId: null,
                     }
                 ]

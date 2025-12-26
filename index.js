@@ -1,4 +1,4 @@
-import { Client, Collection, Events, GatewayIntentBits, MessageFlags } from 'discord.js';
+import { Client, Collection, Events, GatewayIntentBits, MessageFlags, Partials } from 'discord.js';
 import { fileURLToPath } from 'node:url';
 import { readFile, writeFile } from 'node:fs/promises';
 import fs from "node:fs";
@@ -17,7 +17,24 @@ const __dirname = path.dirname(__filename);
 
 const token = process.env.token;
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+
+const client = new Client(
+	{
+		intents: [
+			GatewayIntentBits.Guilds,
+			GatewayIntentBits.GuildMessages,
+			GatewayIntentBits.DirectMessages,
+			GatewayIntentBits.MessageContent
+		],
+		partials: [
+			Partials.Channel,
+			Partials.Message
+		]
+	}
+);
+client.config = {
+	prefix: "sw!"
+};
 // When the client is ready, run this code (only once).
 // The distinction between `client: Client<boolean>` and `readyClient: Client<true>` is important for TypeScript developers.
 // It makes some properties non-nullable.
@@ -52,42 +69,12 @@ async function importEvents() {
 		const filePath = path.join(eventsPath, file);
 		const event = await import(filePath);
 		if (event.once) {
-			client.once(event.name, (...args) => event.execute(...args));
+			client.once(event.name, (...args) => event.execute(...args, client));
 		} else {
-			client.on(event.name, (...args) => event.execute(...args));
+			client.on(event.name, (...args) => event.execute(...args, client));
 		}
 	}
 }
-
-client.on(Events.InteractionCreate, async (interaction) => {
-	if (!interaction.isChatInputCommand()) {
-		return;
-	}
-	const command = interaction.client.commands.get(interaction.commandName);
-	const channel = await client.channels.fetch(interaction.channelId);
-
-	if (!command) {
-		console.error(`No command matching ${interaction.commandName} was found.`);
-		return;
-	}
-
-	try {
-		await command.execute(interaction);
-	} catch (error) {
-		console.error(error);
-		if (interaction.replied || interaction.deferred) {
-			await interaction.followUp({
-				content: 'There was an error while executing this command!',
-				flags: MessageFlags.Ephemeral,
-			});
-		} else {
-			await interaction.reply({
-				content: 'There was an error while executing this command!',
-				flags: MessageFlags.Ephemeral,
-			});
-		}
-	}
-});
 
 function getColor(expression) {
 	const val = eval(expression);
