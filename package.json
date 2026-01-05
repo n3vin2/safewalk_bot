@@ -1,9 +1,10 @@
 {
   "type": "module",
   "scripts": {
-	  "start": "node --env-file=.env index.js"
+    "start": "node --env-file=.env index.js"
   },
   "dependencies": {
-    "discord.js": "^14.25.1"
+    "discord.js": "^14.25.1",
+    "nodemailer": "^7.0.12"
   }
 }
