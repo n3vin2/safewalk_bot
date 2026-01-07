@@ -90,6 +90,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 function getColor(expression) {
+	if (expression === 0) {
+		return "⬛";
+	}
 	const val = eval(expression);
 	if (val == 0) {
 		return "🟩";
@@ -122,7 +125,9 @@ Hi <@&${roleId}>, happy ${days[today.getDay()]}!\n
 Dispatcher: ${schedule.Dispatchers.join(", ")}\n
 🟩 = Vacant
 🟨 = Partially Filled
-🟥 = Filled\n
+🟥 = Filled
+⬛ = Unavailable
+\n
 ${getMiddlePart(schedule)}
 `;
 	/*               P          S         Te        Tr */
@@ -189,7 +194,7 @@ async function clientSetup() {
 				});
 			}
 		}
-	}, 1000 * 60 * 5);
+	}, 1000 /* * 60 * 5 */);
 }
 
 clientSetup();
