@@ -9,7 +9,6 @@ export const execute = async function(message, client) {
             const commandName = args[0].slice(client.config.prefix.length, args[0].length);
             const command = client.commands.get(commandName);
             if (command) {
-                await message.reply("Running command...");
                 await command.execute(message)
             } else {
                 await message.reply("Sorry, I do not understand this command.");
