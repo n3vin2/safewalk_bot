@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, PermissionsBitField, ChatInputCommandInteraction } from "discord.js";
+import { SlashCommandBuilder, PermissionsBitField, ChatInputCommandInteraction, MessageFlags } from "discord.js";
 import { readFile, writeFile } from "node:fs/promises";
 
 export const data = new SlashCommandBuilder().setName("register").setDescription("Set daily shift pings for this server.");
@@ -8,6 +8,10 @@ export const execute = async (interaction) => {
     const guildId = interaction.guildId;
     const isAdmin = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
     let userId;
+    const messagReply = {
+        content: "",
+        flags: MessageFlags.Ephemeral
+    }
     if (interaction instanceof ChatInputCommandInteraction) {
         userId = interaction.user.id;
     } else {
@@ -32,7 +36,8 @@ export const execute = async (interaction) => {
                     }
                 });
                 if (channelExist) {
-                    await interaction.reply("This channel has already been set for pings.");
+                    messagReply.content = "This channel has already been set for pings."
+                    await interaction.reply(messagReply);
                     return;
                 }
             } else {
@@ -50,16 +55,19 @@ export const execute = async (interaction) => {
                         messageId: null,
                     }
                 ]
-            }
+            };
             data = [...data.filter(guild => guild.guildId !== guildObject.guildId), guildObject];
             await writeFile("registered_channels.json", JSON.stringify(data));
-            await interaction.reply("This channel has been successfully set for pings!");
+            messagReply.content = "This channel has been successfully set for pings!";
+            await interaction.reply(messagReply);
 
         } else {
-            await interaction.reply("Insufficient permissions to run this command.");
+            messagReply.content = "Insufficient permissions to run this command.";
+            await interaction.reply(messagReply);
         }
     } catch (exception) {
         console.log(exception);
-        await interaction.reply("Something went wrong. Please try again.");
+        messagReply.content = "Something went wrong. Please try again.";
+        await interaction.reply(messagReply);
     }
 }
