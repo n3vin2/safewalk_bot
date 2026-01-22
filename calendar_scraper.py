@@ -124,13 +124,14 @@ def getVolunteers(driver):
                         shift_time_element = cell.select_one("td.timeColumn.startTime").text
                         shift_type = shift_type_text.split(" ")[-2]
 
-                        shift_type = role_index_mapping[shift_type]
-                        shift_time = time_index_mapping[shift_time_element]
+                        if shift_type in role_index_mapping:
+                            shift_type = role_index_mapping[shift_type]
+                            shift_time = time_index_mapping[shift_time_element]
 
-                        database["Available_Shifts"][shift_type] = 1
-                        numCapacity = cell.select_one('td.numberColumn:has(span[title="Maximum Volunteers"])').span.text
-                        num_signedUp = cell.select_one("td.numberColumn.shiftConfirmedTd").span.text
-                        grid[shift_time][shift_type] = num_signedUp + "/" + numCapacity
+                            database["Available_Shifts"][shift_type] = 1
+                            numCapacity = cell.select_one('td.numberColumn:has(span[title="Maximum Volunteers"])').span.text
+                            num_signedUp = cell.select_one("td.numberColumn.shiftConfirmedTd").span.text
+                            grid[shift_time][shift_type] = num_signedUp + "/" + numCapacity
                 if shift_type == "d" and "volunteerRow" in cell["class"]:
                     dispatcherName = cell.find("td", class_="firstName").text.strip()
                     database["Dispatchers"].append(dispatcherName)
