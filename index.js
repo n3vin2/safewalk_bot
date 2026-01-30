@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { readFile, writeFile } from 'node:fs/promises';
 import fs from "node:fs";
 import path from 'node:path';
-import { channel } from 'node:diagnostics_channel';
+import sqlite3 from "sqlite3";
 
 const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const shiftTimes = ["7PM:", "8PM:", "9PM:"];
@@ -14,6 +14,32 @@ const headerShiftSpacings = [14, 10, 9, 8];
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const db = new sqlite3.Database("safewalk_bot.db");
+db.run(
+	`CREATE TABLE IF NOT EXISTS authcodes (
+		Discord_ID TEXT,
+		Email TEXT,
+		Code_Hash TEXT NOT NULL,
+		Expiry DATETIME NOT NULL,
+		PRIMARY KEY (Discord_ID)
+	)`,
+	function(err) {
+		console.log(err);
+	}
+);
+db.run(
+	`CREATE TABLE IF NOT EXISTS users (
+		Discord_ID TEXT,
+		Email TEXT,
+		Authenticated_At DATETIME,
+		PRIMARY KEY (Discord_ID)
+	)`,
+	function(err) {
+		console.log(err);
+	}
+)
+db.close()
 
 const token = process.env.token;
 // Create a new client instance
@@ -43,6 +69,8 @@ client.config = {
 }); */
 
 client.commands = new Collection();
+client.buttons = new Collection();
+client.modals = new Collection();
 
 async function importCommands() {
 	const foldersPath = path.join(__dirname, "commands");
@@ -72,6 +100,38 @@ async function importEvents() {
 			client.once(event.name, (...args) => event.execute(...args, client));
 		} else {
 			client.on(event.name, (...args) => event.execute(...args, client));
+		}
+	}
+}
+
+async function importButtons() {
+	const foldersPath = path.join(__dirname, 'buttons');
+	const buttonFolders = fs.readdirSync(foldersPath);
+	for (const folder of buttonFolders) {
+		const buttonsPath = path.join(foldersPath, folder);
+		const buttonFiles = fs.readdirSync(buttonsPath).filter((file) => file.endsWith('.js'));
+		for (const file of buttonFiles) {
+			const filePath = path.join(buttonsPath, file);
+			const button = await import(filePath);
+			if ("customId" in button && "execute" in button) {
+				client.buttons.set(button.customId, button);
+			}
+		}
+	}
+}
+
+async function importModals() {
+	const foldersPath = path.join(__dirname, 'modals');
+	const modalFolders = fs.readdirSync(foldersPath);
+	for (const folder of modalFolders) {
+		const modalsPath = path.join(foldersPath, folder);
+		const modalFiles = fs.readdirSync(modalsPath).filter((file) => file.endsWith('.js'));
+		for (const file of modalFiles) {
+			const filePath = path.join(modalsPath, file);
+			const modal = await import(filePath);
+			if ("customId" in modal && "execute" in modal) {
+				client.modals.set(modal.customId, modal);
+			}
 		}
 	}
 }
@@ -140,6 +200,8 @@ async function clientSetup() {
 
 	await importCommands();
 	await importEvents();
+	await importButtons();
+	await importModals();
 
 	setInterval(async () => {
 		const now = new Date();
@@ -169,13 +231,21 @@ async function clientSetup() {
 								channelObject.messageId = newMessageId;
 								await writeFile("registered_channels.json", JSON.stringify(data));
 							} else {
-								message.edit(getMessage(schedule, role.id));
+								const stat = await message.edit(getMessage(schedule, role.id));
 							}
 						}
 					});
 				});
 			}
 		}
+		const db = new sqlite3.Database("safewalk_bot.db");
+		db.run(
+			"DELETE FROM authcodes WHERE Expiry < DATETIME('now')",
+			function(error) {
+				console.log(error);
+			}
+		)
+		db.close();
 	}, 1000 * 60 * 5);
 }
 
