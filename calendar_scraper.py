@@ -45,15 +45,12 @@ def login(driver):
     driver.get(url)
 
     # logging in
-    username_input_loaded = False
-    while not username_input_loaded:
-        try:
-            WebDriverWait(driver, TIMEOUT).until(
-                expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "#UserName"))
-            )
-            username_input_loaded = True
-        except:
-            driver.refresh()
+    try:
+        WebDriverWait(driver, TIMEOUT).until(
+            expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "#UserName"))
+        )
+    except:
+        return -1
     user_element = driver.find_element(By.CSS_SELECTOR, "#UserName")
     password_element = driver.find_element(By.CSS_SELECTOR, "#Password")
 
@@ -65,52 +62,31 @@ def login(driver):
     pass
 
 def getVolunteers(driver):
-    fav_link_loaded = False
-    while not fav_link_loaded:
-        try:
-            WebDriverWait(driver, TIMEOUT).until(
-                expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a.favouriteLink"))
-            )
-            fav_link_loaded = True
-        except:
-            driver.refresh()
-    favLink = driver.find_element(By.CSS_SELECTOR, "a.favouriteLink")
-    favLink.click()
+    try:
+        WebDriverWait(driver, TIMEOUT).until(
+            expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a.favouriteLink"))
+        )
+        favLink = driver.find_element(By.CSS_SELECTOR, "a.favouriteLink")
+        favLink.click()
 
-    fully_loaded = False
-    while not fully_loaded:
-        expand_button_loaded = False
-        try:
-            WebDriverWait(driver, TIMEOUT).until(
-                expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "#ScheduleDetailsHolder"))
-            )
-            scheduleDetails = driver.find_element(By.CSS_SELECTOR, "#ScheduleDetailsHolder")
+        WebDriverWait(driver, TIMEOUT).until(
+            expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "#ScheduleDetailsHolder"))
+        )
+        scheduleDetails = driver.find_element(By.CSS_SELECTOR, "#ScheduleDetailsHolder")
 
-            WebDriverWait(scheduleDetails, TIMEOUT).until(
-                expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "#ExpandAllShiftsButton"))
-            )
-            expandButton = driver.find_element(By.CSS_SELECTOR, "#ExpandAllShiftsButton")
-            expand_button_loaded = True
-            expandButton.click()
+        WebDriverWait(scheduleDetails, TIMEOUT).until(
+            expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "#ExpandAllShiftsButton"))
+        )
+        expandButton = driver.find_element(By.CSS_SELECTOR, "#ExpandAllShiftsButton")
+        expandButton.click()
 
-            WebDriverWait(driver, TIMEOUT).until(
-                expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span.ui-button-icon-primary.ui-icon.ui-icon-circle-minus"))
-            )
-            fully_loaded = True
-        except:
-            if not expand_button_loaded:
-                try:
-                    WebDriverWait(scheduleDetails, TIMEOUT).until(
-                        expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "div.notice"))
-                    )
-                    return -1
-                except:
-                    driver.refresh()
-            else:
-                driver.refresh()
+        WebDriverWait(driver, TIMEOUT).until(
+            expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span.ui-button-icon-primary.ui-icon.ui-icon-circle-minus"))
+        )
+        soup = BeautifulSoup(driver.page_source, "lxml")
+    except:
+        return -1
 
-
-    soup = BeautifulSoup(driver.page_source, "lxml")
     for day in soup.find_all("div", class_="marginAllHalf"):
         current_date = datetime.now().strftime("%Y-%m-%d")
         if day.table["data-date"] == current_date:
@@ -146,26 +122,31 @@ driver.maximize_window()
 login(driver)
 
 while True:
-    database = {
-        "Active": False,
-        "Available_Shifts": [],
-        "Dispatchers": [],
-        "Volunteers": []
-    }
-    database["Available_Shifts"] = [0] * role_cnt
-    grid = database["Volunteers"]
-    for i in range(shift_cnt):
-        if i < shift_cnt - 1:
-            grid.append([0] * role_cnt)
-        else:
-            grid.append([0] * (role_cnt - 2))
-    if getVolunteers(driver) == 0:
-        database["Active"] = True
-        with open("volunteer_schedule.json", "w", encoding="utf-8") as file:
-            file.write(json.dumps(database))
-    else:
-        database["Active"] = False
-        with open("volunteer_schedule.json", "w", encoding="utf-8") as file:
-            file.write(json.dumps(database))
-    print(f"[{str(datetime.now())}] loop done")
+    try:
+        database = {
+            "Active": False,
+            "Available_Shifts": [],
+            "Dispatchers": [],
+            "Volunteers": []
+        }
+        database["Available_Shifts"] = [0] * role_cnt
+        grid = database["Volunteers"]
+        for i in range(shift_cnt):
+            if i < shift_cnt - 1:
+                grid.append([0] * role_cnt)
+            else:
+                grid.append([0] * (role_cnt - 2))
+        status_code = getVolunteers(driver)
+        if status_code == 0:
+            database["Active"] = True
+            with open("volunteer_schedule.json", "w", encoding="utf-8") as file:
+                file.write(json.dumps(database))
+        elif status_code == -1:
+            database["Active"] = False
+            with open("volunteer_schedule.json", "w", encoding="utf-8") as file:
+                file.write(json.dumps(database))
+        print(f"[{str(datetime.now())}] loop done")
+        driver.refresh()
+    except Exception as e:
+        print(e)
     time.sleep(60 * 5)
