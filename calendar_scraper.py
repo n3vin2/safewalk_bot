@@ -98,7 +98,7 @@ def getVolunteers(driver):
                         shift_type = "d"
                     else:
                         shift_time_element = cell.select_one("td.timeColumn.startTime").text
-                        shift_type = shift_type_text.split(" ")[-2]
+                        shift_type = shift_type_text.split(" ")[3]
 
                         if shift_type in role_index_mapping:
                             shift_type = role_index_mapping[shift_type]
