@@ -117,6 +117,7 @@ def getVolunteers(driver):
 service = Service(ChromeDriverManager().install())
 op = webdriver.ChromeOptions()
 op.add_argument("--headless=new")
+op.add_argument("--no-sandbox")
 driver = webdriver.Chrome(options = op, service = service)
 driver.maximize_window()
 login(driver)
