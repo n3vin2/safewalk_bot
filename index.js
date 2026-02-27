@@ -118,7 +118,7 @@ function getMiddlePart(schedule) {
 }
 
 function getMessage(schedule, roleId) {
-	const today = new Date();
+	const today = getCurrentTimeZone(new Date());
 
 	const firstPart =  `
 Hi <@&${roleId}>, happy ${days[today.getDay()]}!\n
@@ -152,6 +152,10 @@ ${getMiddlePart(schedule)}
 	return firstPart + secondPart;
 }
 
+function getCurrentTimeZone(date) {
+	return new Date(date.toLocaleString("en", {timeZone: process.env.time_zone}))
+}
+
 async function clientSetup() {
 	// Log in to Discord with your client's token
 	await client.login(token);
@@ -160,7 +164,7 @@ async function clientSetup() {
 	await importEvents();
 
 	setInterval(async () => {
-		const now = new Date();
+		const now = getCurrentTimeZone(new Date());
 		if (now.getHours() >= 12) {
 			const database = await readFile("volunteer_schedule.json", "utf-8");
 			const schedule = JSON.parse(database);
@@ -180,7 +184,7 @@ async function clientSetup() {
 							await writeFile("registered_channels.json", JSON.stringify(data));
 						} else {
 							const message = await channel.messages.fetch(channelObject.messageId);
-							const postDate = new Date(message.createdTimestamp);
+							const postDate = getCurrentTimeZone(new Date(message.createdTimestamp));
 							if (postDate.getDay() !== now.getDay()) {
 								const newMessage = await channel.send(getMessage(schedule, role.id));
 								const newMessageId = newMessage.id;
