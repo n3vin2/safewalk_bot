@@ -1,6 +1,7 @@
 import os
 import json
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -88,7 +89,7 @@ def getVolunteers(driver):
         return -1
 
     for day in soup.find_all("div", class_="marginAllHalf"):
-        current_date = datetime.now().strftime("%Y-%m-%d")
+        current_date = datetime.now(ZoneInfo(timezone)).strftime("%Y-%m-%d")
         if day.table["data-date"] == current_date:
             shift_type = None
             for cell in day.table.tbody.find_all("tr"):
@@ -113,6 +114,8 @@ def getVolunteers(driver):
                     database["Dispatchers"].append(dispatcherName)
             return 0
     return -1
+
+timezone = os.getenv("time_zone")
 
 service = Service(ChromeDriverManager().install())
 op = webdriver.ChromeOptions()
@@ -146,7 +149,7 @@ while True:
             database["Active"] = False
             with open("volunteer_schedule.json", "w", encoding="utf-8") as file:
                 file.write(json.dumps(database))
-        print(f"[{str(datetime.now())}] loop done")
+        print(f"[{str(datetime.now(ZoneInfo(timezone)))}] loop done")
         driver.refresh()
     except Exception as e:
         print(e)
