@@ -121,12 +121,12 @@ service = Service(ChromeDriverManager().install())
 op = webdriver.ChromeOptions()
 op.add_argument("--headless=new")
 op.add_argument("--no-sandbox")
-driver = webdriver.Chrome(options = op, service = service)
-driver.maximize_window()
-login(driver)
 
 while True:
     try:
+        driver = webdriver.Chrome(options = op, service = service)
+        driver.maximize_window()
+        login(driver)
         database = {
             "Active": False,
             "Available_Shifts": [],
@@ -150,7 +150,8 @@ while True:
             with open("volunteer_schedule.json", "w", encoding="utf-8") as file:
                 file.write(json.dumps(database))
         print(f"[{str(datetime.now(ZoneInfo(timezone)))}] loop done")
-        driver.refresh()
     except Exception as e:
         print(e)
+    finally:
+        driver.quit()
     time.sleep(60 * 5)
