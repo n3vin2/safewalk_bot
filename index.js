@@ -3,7 +3,6 @@ import { fileURLToPath } from 'node:url';
 import { readFile, writeFile } from 'node:fs/promises';
 import fs from "node:fs";
 import path from 'node:path';
-import sqlite3 from "sqlite3";
 
 const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const shiftTimes = ["7PM:", "8PM:", "9PM:"];
@@ -15,35 +14,8 @@ const headerShiftSpacings = [14, 10, 9, 8];
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const db = new sqlite3.Database("safewalk_bot.db");
-db.run(
-	`CREATE TABLE IF NOT EXISTS authcodes (
-		Discord_ID TEXT,
-		Email TEXT,
-		Code_Hash TEXT NOT NULL,
-		Expiry DATETIME NOT NULL,
-		PRIMARY KEY (Discord_ID)
-	)`,
-	function(err) {
-		console.log(err);
-	}
-);
-db.run(
-	`CREATE TABLE IF NOT EXISTS users (
-		Discord_ID TEXT,
-		Email TEXT,
-		Authenticated_At DATETIME,
-		PRIMARY KEY (Discord_ID)
-	)`,
-	function(err) {
-		console.log(err);
-	}
-)
-db.close()
-
 const token = process.env.token;
 // Create a new client instance
-
 const client = new Client(
 	{
 		intents: [
@@ -137,8 +109,11 @@ async function importModals() {
 }
 
 function getColor(expression) {
+	if (expression === 0) {
+		return "⬛";
+	}
 	const val = eval(expression);
-	if (val == 0) {
+	if (val === 0) {
 		return "🟩";
 	} else if (val > 0 && val < 1) {
 		return "🟨";
@@ -162,14 +137,16 @@ function getMiddlePart(schedule) {
 }
 
 function getMessage(schedule, roleId) {
-	const today = new Date();
+	const today = getCurrentTimeZone(new Date());
 
 	const firstPart =  `
 Hi <@&${roleId}>, happy ${days[today.getDay()]}!\n
 Dispatcher: ${schedule.Dispatchers.join(", ")}\n
 🟩 = Vacant
 🟨 = Partially Filled
-🟥 = Filled\n
+🟥 = Filled
+⬛ = Unavailable
+\n
 ${getMiddlePart(schedule)}
 `;
 	/*               P          S         Te        Tr */
@@ -194,6 +171,10 @@ ${getMiddlePart(schedule)}
 	return firstPart + secondPart;
 }
 
+function getCurrentTimeZone(date) {
+	return new Date(date.toLocaleString("en", {timeZone: process.env.time_zone}))
+}
+
 async function clientSetup() {
 	// Log in to Discord with your client's token
 	await client.login(token);
@@ -204,7 +185,7 @@ async function clientSetup() {
 	await importModals();
 
 	setInterval(async () => {
-		const now = new Date();
+		const now = getCurrentTimeZone(new Date());
 		if (now.getHours() >= 12) {
 			const database = await readFile("volunteer_schedule.json", "utf-8");
 			const schedule = JSON.parse(database);
@@ -224,7 +205,7 @@ async function clientSetup() {
 							await writeFile("registered_channels.json", JSON.stringify(data));
 						} else {
 							const message = await channel.messages.fetch(channelObject.messageId);
-							const postDate = new Date(message.createdTimestamp);
+							const postDate = getCurrentTimeZone(new Date(message.createdTimestamp));
 							if (postDate.getDay() !== now.getDay()) {
 								const newMessage = await channel.send(getMessage(schedule, role.id));
 								const newMessageId = newMessage.id;
