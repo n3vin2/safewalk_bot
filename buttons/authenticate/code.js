@@ -1,21 +1,21 @@
-import { ModalBuilder, TextInputBuilder, TextInputStyle, SlashCommandBuilder, ChatInputCommandInteraction, ContainerBuilder, ButtonBuilder, ActionRowBuilder, MessageFlags, ButtonStyle, LabelBuilder } from "discord.js";
+import { ModalBuilder, TextInputBuilder, TextInputStyle, LabelBuilder } from "discord.js";
 
-export const customId = "email";
+export const customId = "code";
 
-export const execute = async (interaction, client) => {
-    const modal = new ModalBuilder().setCustomId("email-modal").setTitle("Sending Verification Code");
+export const execute = async (interaction) => {
+    const modal = new ModalBuilder().setCustomId("codeModal").setTitle("Enter Verification Code");
 
-    const emailInput = new TextInputBuilder()
-            .setCustomId("emailInput")
+    const codeInput = new TextInputBuilder()
+            .setCustomId("codeInput")
             .setStyle(TextInputStyle.Short)
-            .setPlaceholder("XXXXXX@domain");
+            .setPlaceholder("XXXXXX");
 
-    const emailInputLabel = new LabelBuilder()
-            .setLabel("Enter your email")
-            .setDescription("Enter the email with which you signed up on BetterImpact.")
-            .setTextInputComponent(emailInput);
+    const codeInputLabel = new LabelBuilder()
+            .setLabel("Enter the code")
+            .setDescription(`Enter the code which was sent from ${process.env.app_username}`)
+            .setTextInputComponent(codeInput);
 
-    modal.addLabelComponents(emailInputLabel);
+    modal.addLabelComponents(codeInputLabel);
 
     await interaction.showModal(modal);
 }

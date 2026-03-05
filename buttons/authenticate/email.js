@@ -1,9 +1,9 @@
-import { ModalBuilder, TextInputBuilder, TextInputStyle, SlashCommandBuilder, ChatInputCommandInteraction, ContainerBuilder, ButtonBuilder, ActionRowBuilder, MessageFlags, ButtonStyle, LabelBuilder } from "discord.js";
+import { ModalBuilder, TextInputBuilder, TextInputStyle, LabelBuilder } from "discord.js";
 
 export const customId = "email";
 
-export const execute = async (interaction, client) => {
-    const modal = new ModalBuilder().setCustomId("email-modal").setTitle("Sending Verification Code");
+export const execute = async (interaction) => {
+    const modal = new ModalBuilder().setCustomId("emailModal").setTitle("Sending Verification Code");
 
     const emailInput = new TextInputBuilder()
 			.setCustomId("emailInput")
@@ -12,7 +12,7 @@ export const execute = async (interaction, client) => {
 
     const emailInputLabel = new LabelBuilder()
             .setLabel("Enter your email")
-            .setDescription("Enter the email with which you signed up on BetterImpact.")
+            .setDescription("Enter the email with which you signed up on BetterImpact")
             .setTextInputComponent(emailInput);
 
     modal.addLabelComponents(emailInputLabel);
