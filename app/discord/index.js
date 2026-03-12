@@ -174,7 +174,7 @@ ${getMiddlePart(schedule)}
 	return firstPart + secondPart;
 }
 
-export const clientSetup = async () => {
+export const discordSetup = async () => {
 	// Log in to Discord with your client's token
 	await client.login(token);
 
