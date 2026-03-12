@@ -1,8 +1,11 @@
 import { Client, Collection, Events, GatewayIntentBits, MessageFlags, Partials } from 'discord.js';
 import { fileURLToPath } from 'node:url';
 import { readFile, writeFile } from 'node:fs/promises';
+import { getCurrentTimeZone } from '../services/time/timezone.js';
 import fs from "node:fs";
 import path from 'node:path';
+
+import db from "../models/index.js";
 
 const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const shiftTimes = ["7PM:", "8PM:", "9PM:"];
@@ -171,11 +174,7 @@ ${getMiddlePart(schedule)}
 	return firstPart + secondPart;
 }
 
-function getCurrentTimeZone(date) {
-	return new Date(date.toLocaleString("en", {timeZone: process.env.time_zone}))
-}
-
-async function clientSetup() {
+export const clientSetup = async () => {
 	// Log in to Discord with your client's token
 	await client.login(token);
 
@@ -183,6 +182,8 @@ async function clientSetup() {
 	await importEvents();
 	await importButtons();
 	await importModals();
+
+	console.log(client.commands, client.buttons, client.modals);
 
 	setInterval(async () => {
 		const now = getCurrentTimeZone(new Date());
@@ -219,15 +220,5 @@ async function clientSetup() {
 				});
 			}
 		}
-		const db = new sqlite3.Database("safewalk_bot.db");
-		db.run(
-			"DELETE FROM authcodes WHERE Expiry < DATETIME('now')",
-			function(error) {
-				console.log(error);
-			}
-		)
-		db.close();
 	}, 1000 * 60 * 5);
 }
-
-clientSetup();
