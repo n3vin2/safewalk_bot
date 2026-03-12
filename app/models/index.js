@@ -3,7 +3,7 @@ import { basename as _basename, dirname, join } from "path";
 import { Sequelize, DataTypes } from "sequelize";
 import { createRequire } from "module";
 import { fileURLToPath } from "url";
-import configFile from "../config/config.json" with { type: "json" };
+import configFile from "../database/config.js";
 
 const require = createRequire(import.meta.url);
 const __filename = fileURLToPath(import.meta.url);

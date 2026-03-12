@@ -1,7 +1,7 @@
-import { Model, UUIDV4 } from "sequelize";
+import { Model } from "sequelize";
 
 export default (sequelize, DataTypes) => {
-	class authcodes extends Model {
+	class users extends Model {
 		/**
 		 * Helper method for defining associations.
 		 * This method is not a part of Sequelize lifecycle.
@@ -11,10 +11,10 @@ export default (sequelize, DataTypes) => {
 			// define association here
 		}
 	}
-	authcodes.init({
+	users.init({
 		UUID: {
 			type: DataTypes.UUID,
-			defaultValue: DataTypes.UUIDV4
+			type: DataTypes.UUIDV4
 		},
 		Discord_ID: {
 			type: DataTypes.STRING,
@@ -24,18 +24,13 @@ export default (sequelize, DataTypes) => {
 			type: DataTypes.STRING,
 			allowNull: false
 		},
-		Code_Hash: {
-			type: DataTypes.STRING,
-			allowNull: false
-		},
-		Expiry: {
+		Authenticated_At: {
 			type: DataTypes.DATE,
 			allowNull: false
 		}
 	}, {
 		sequelize,
-		modelName: 'authcodes',
-		name: "authcodes"
+		modelName: 'users',
 	});
-	return authcodes;
+	return users;
 };

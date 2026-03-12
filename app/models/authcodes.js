@@ -1,9 +1,7 @@
-'use strict';
-const {
-	Model
-} = require('sequelize');
-module.exports = (sequelize, DataTypes) => {
-	class users extends Model {
+import { Model } from "sequelize";
+
+export default (sequelize, DataTypes) => {
+	class authcodes extends Model {
 		/**
 		 * Helper method for defining associations.
 		 * This method is not a part of Sequelize lifecycle.
@@ -13,10 +11,10 @@ module.exports = (sequelize, DataTypes) => {
 			// define association here
 		}
 	}
-	users.init({
+	authcodes.init({
 		UUID: {
 			type: DataTypes.UUID,
-			type: DataTypes.UUIDV4
+			defaultValue: DataTypes.UUIDV4
 		},
 		Discord_ID: {
 			type: DataTypes.STRING,
@@ -26,13 +24,18 @@ module.exports = (sequelize, DataTypes) => {
 			type: DataTypes.STRING,
 			allowNull: false
 		},
-		Authenticated_At: {
+		Code_Hash: {
+			type: DataTypes.STRING,
+			allowNull: false
+		},
+		Expiry: {
 			type: DataTypes.DATE,
 			allowNull: false
 		}
 	}, {
 		sequelize,
-		modelName: 'users',
+		modelName: 'authcodes',
+		name: "authcodes"
 	});
-	return users;
+	return authcodes;
 };
