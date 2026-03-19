@@ -5,8 +5,6 @@ import { getCurrentTimeZone } from '../services/time/timezone.js';
 import fs from "node:fs";
 import path from 'node:path';
 
-import db from "../models/index.js";
-
 const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const shiftTimes = ["7PM:", "8PM:", "9PM:"];
 const shiftTypes = ["Patroller", "Study", "Trainee", "Trainer"];
@@ -182,8 +180,6 @@ export const discordSetup = async () => {
 	await importEvents();
 	await importButtons();
 	await importModals();
-
-	console.log(client.commands, client.buttons, client.modals);
 
 	setInterval(async () => {
 		const now = getCurrentTimeZone(new Date());
