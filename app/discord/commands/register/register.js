@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, PermissionsBitField, ChatInputCommandInteraction, MessageFlags } from "discord.js";
-import { readFile, writeFile } from "node:fs/promises";
+import { prisma } from "../../../services/db.js"
 
 export const data = new SlashCommandBuilder().setName("register").setDescription("Set daily shift pings for this server.");
 
@@ -19,45 +19,31 @@ export const execute = async (interaction) => {
     }
     try {
         if (userId === process.env.dev_id || isAdmin) {
-            const rawData = await readFile("registered_channels.json", "utf-8");
-            let data = JSON.parse(rawData);
-
-            let guildObject = null;
-            data.forEach(guild => {
-                if (guildId === guild.guildId) {
-                    guildObject = guild;
-                }
-            });
-            if (guildObject) {
-                let channelExist = false;
-                guildObject.channels.forEach(channel => {
-                    if (channelId === channel.channelId) {
-                        channelExist = true;
-                    }
-                });
-                if (channelExist) {
-                    messagReply.content = "This channel has already been set for pings."
-                    await interaction.reply(messagReply);
-                    return;
-                }
-            } else {
-                guildObject = {
-                    guildId: guildId,
-                    channels: []
-                };
+            const channel_object = {
+                guild_id: guildId,
+                channel_id: channelId
             }
-            guildObject = {
-                ...guildObject,
-                channels: [
-                    ...guildObject.channels,
-                    {
-                        channelId: channelId,
-                        messageId: null,
+            
+            const channel = await prisma.channel.findUnique(
+                {
+                    where: {
+                        guild_id_channel_id: channel_object,
                     }
-                ]
-            };
-            data = [...data.filter(guild => guild.guildId !== guildObject.guildId), guildObject];
-            await writeFile("registered_channels.json", JSON.stringify(data));
+                }
+            );
+
+            if (channel) {
+                messagReply.content = "This channel has already been set for pings."
+                await interaction.reply(messagReply);
+                return;
+            }
+
+            await prisma.channel.create(
+                {
+                    data: channel_object
+                }
+            );
+            
             messagReply.content = "This channel has been successfully set for pings!";
             await interaction.reply(messagReply);
 
