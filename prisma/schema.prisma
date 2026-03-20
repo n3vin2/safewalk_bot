@@ -15,8 +15,8 @@ datasource db {
 model Authcode {
 	id String @id @default(uuid())
 	discord_id String @unique
-	email String @unique
-	code_hash String @unique
+	email String
+	code_hash String
 	expiry DateTime
 }
 
