@@ -1,7 +1,7 @@
-import sesClient from './sesClient';
+import sesClient from './sesClient.js';
 import { SendEmailCommand } from '@aws-sdk/client-ses';
 
-export const sendEmail = async (recipientEmail) => {
+export const sendEmail = async (recipientEmail, subject, body) => {
     const params = {
         Source: process.env.AWS_SES_SENDER,
         Destination: {
@@ -14,21 +14,16 @@ export const sendEmail = async (recipientEmail) => {
             Body: {
                 Html: {
                     Charset: "UTF-8",
-                    Data: "<h1>Email body</h1>"
+                    Data: body
                 },
             },
             Subject: {
                 Charset: "UTF-8",
-                Data: "Subject"
+                Data: subject
             }
         }
     }
 
-    try {
-        const sendEmailCommand = new SendEmailCommand(params);
-        const res = await sesClient.send(sendEmailCommand);
-        console.log("Email has been sent!", res);
-    } catch (error) {
-        console.log(error);
-    }
+    const sendEmailCommand = new SendEmailCommand(params);
+    const res = await sesClient.send(sendEmailCommand);
 }
