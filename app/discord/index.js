@@ -4,6 +4,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { getCurrentTimeZone } from '../services/time/timezone.js';
 import fs from "node:fs";
 import path from 'node:path';
+import { prisma } from '../services/db.js';
 
 const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const shiftTimes = ["7PM:", "8PM:", "9PM:"];
@@ -183,38 +184,51 @@ export const discordSetup = async () => {
 
 	setInterval(async () => {
 		const now = getCurrentTimeZone(new Date());
-		if (now.getHours() >= 12) {
-			const database = await readFile("volunteer_schedule.json", "utf-8");
-			const schedule = JSON.parse(database);
-			if (schedule.Active) {
-				const rawData = await readFile("registered_channels.json", "utf-8");
-				const data = JSON.parse(rawData);
-				data.forEach(async (guildObject) => {
-					const guild = await client.guilds.fetch(guildObject.guildId);
-					const roles = await guild.roles.fetch();
-					const role = roles.find(r => r.name === "Patroller");
-					guildObject.channels.forEach(async (channelObject) => {
-						const channel = await client.channels.fetch(channelObject.channelId)
-						if (channelObject.messageId === null) {
-							const newMessage = await channel.send(getMessage(schedule, role.id));
-							const newMessageId = newMessage.id;
-							channelObject.messageId = newMessageId;
-							await writeFile("registered_channels.json", JSON.stringify(data));
-						} else {
-							const message = await channel.messages.fetch(channelObject.messageId);
-							const postDate = getCurrentTimeZone(new Date(message.createdTimestamp));
-							if (postDate.getDay() !== now.getDay()) {
-								const newMessage = await channel.send(getMessage(schedule, role.id));
-								const newMessageId = newMessage.id;
-								channelObject.messageId = newMessageId;
-								await writeFile("registered_channels.json", JSON.stringify(data));
-							} else {
-								const stat = await message.edit(getMessage(schedule, role.id));
+		if (now.getHours() < 12) {
+			return;
+		}
+
+		const database = await readFile("volunteer_schedule.json", "utf-8");
+		const schedule = JSON.parse(database);
+		if (!schedule.Active) {
+			return;
+		}
+
+		const registered_channels = await prisma.channel.findMany();
+		registered_channels.forEach(async (channel_entry) => {
+			const guild = await client.guilds.fetch(channel_entry.guild_id);
+			const roles = await guild.roles.fetch();
+			const role = roles.find(r => r.name === "Patroller");
+			const channel = await client.channels.fetch(channel_entry.channel_id);
+			if (channel_entry.message_id === null) {
+				const newMessage = await channel.send(getMessage(schedule, role.id));
+				await prisma.channel.update(
+					{
+						where: channel_entry,
+						data: {
+							...channel_entry,
+							message_id: newMessage.id
+						}
+					}
+				);
+			} else {
+				const message = await channel.messages.fetch(channel_entry.message_id);
+				const postDate = getCurrentTimeZone(new Date(message.createdTimestamp));
+				if (postDate.getDay() !== now.getDay()) {
+					const newMessage = await channel.send(getMessage(schedule, role.id));
+					await prisma.channel.update(
+						{
+							where: channel_entry,
+							data: {
+								...channel_entry,
+								message_id: newMessage.id
 							}
 						}
-					});
-				});
+					);
+				} else {
+					const stat = await message.edit(getMessage(schedule, role.id));
+				}
 			}
-		}
+		});
 	}, 1000 * 60 * 5);
 }
