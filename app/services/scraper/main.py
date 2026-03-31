@@ -1,5 +1,8 @@
 import os
 import json
+
+import mysql.connector
+
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
@@ -21,21 +24,45 @@ import time
 
 TIMEOUT = 60
 
-time_index_mapping = {
-    "7:00 PM": 0,
-    "8:00 PM": 1,
-    "9:00 PM": 2
-}
+timezone = os.getenv("time_zone")
 
-role_index_mapping = {
-    "Patroller": 0,
-    "Study": 1,
-    "Trainee": 2,
-    "Trainer": 3,
-}
+def get_connection():
+    return mysql.connector.connect(
+        host = os.getenv("DATABASE_HOST"),
+        user = os.getenv("DATABASE_USER"),
+        password = os.getenv("DATABASE_PASSWORD"),
+        database = os.getenv("DATABASE_NAME")
+    )
 
-shift_cnt = len(time_index_mapping.keys())
-role_cnt = len(role_index_mapping.keys())
+def get_role_id_mapping():
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT id, name FROM Shift_Type")
+
+    res = {}
+    for row in cursor.fetchall():
+        res[row["name"]] = row["id"]
+    
+    conn.close()
+    cursor.close()
+    return res
+
+def wipe_database(conn, cursor):
+    cursor.execute("DELETE FROM Shift")
+    cursor.execute("DELETE FROM Dispatcher")
+    conn.commit()
+
+def write_database(conn, cursor, shift_data):
+    for dispatcher in shift_data["Dispatchers"]:
+        print("Writing to dispatcher")
+        cursor.execute("INSERT INTO Dispatcher (name, shift_date) VALUES (%s, %s)", (dispatcher, shift_data["Time"]))
+    conn.commit()
+
+    for shift in shift_data["Available_Shifts"]:
+        print("Writing to shifts")
+        cursor.execute("INSERT INTO Shift (shift_type_id, shift_start_hour, signed_up, capacity, shift_date) VALUES (%s, %s, %s, %s, %s)", (shift["shift_type_id"], shift["shift_start_hour"], shift["signed_up"], shift["capacity"], shift_data["Time"]))
+    conn.commit()
 
 def login(driver):
     load_dotenv()
@@ -63,6 +90,11 @@ def login(driver):
     pass
 
 def getVolunteers(driver):
+    shift_data = {
+        "Dispatchers": [],
+        "Available_Shifts": [],
+        "Time": datetime.now(ZoneInfo(timezone))
+    }
     try:
         WebDriverWait(driver, TIMEOUT).until(
             expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a.favouriteLink"))
@@ -86,7 +118,7 @@ def getVolunteers(driver):
         )
         soup = BeautifulSoup(driver.page_source, "lxml")
     except:
-        return -1
+        return shift_data
 
     for day in soup.find_all("div", class_="marginAllHalf"):
         current_date = datetime.now(ZoneInfo(timezone)).strftime("%Y-%m-%d")
@@ -102,22 +134,24 @@ def getVolunteers(driver):
                     shift_time_element = cell.select_one("td.timeColumn.startTime").text
                     shift_type = shift_type_text.split(" ")[3]
 
-                    if shift_type in role_index_mapping:
-                        shift_type = role_index_mapping[shift_type]
-                        shift_time = time_index_mapping[shift_time_element]
+                    if shift_type in role_id_mapping:
+                        shift_type_id = role_id_mapping[shift_type]
 
-                        database["Available_Shifts"][shift_type] = 1
                         numCapacity = cell.select_one('td.numberColumn:has(span[title="Maximum Volunteers"])').span.text
                         num_signedUp = cell.select_one("td.numberColumn.shiftConfirmedTd").span.text
-                        grid[shift_time][shift_type] = num_signedUp + "/" + numCapacity
+
+                        shift_data["Available_Shifts"].append({
+                            "shift_type_id": shift_type_id,
+                            "shift_start_hour": shift_time_element,
+                            "signed_up": int(num_signedUp),
+                            "capacity": int(numCapacity)
+                        })
             if shift_type == "d" and "volunteerRow" in cell["class"]:
                 dispatcherName = cell.find("td", class_="firstName").text.strip()
-                database["Dispatchers"].append(dispatcherName)
-        return 0
-    return -1
+                shift_data["Dispatchers"].append(dispatcherName)
+    return shift_data
 
-timezone = os.getenv("time_zone")
-
+role_id_mapping = get_role_id_mapping()
 service = Service(ChromeDriverManager().install())
 op = webdriver.ChromeOptions()
 op.add_argument("--headless=new")
@@ -125,31 +159,21 @@ op.add_argument("--no-sandbox")
 
 while True:
     try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        wipe_database(conn, cursor)
         driver = webdriver.Chrome(options = op, service = service)
         driver.maximize_window()
         login(driver)
-        database = {
-            "Active": False,
-            "Available_Shifts": [],
-            "Dispatchers": [],
-            "Volunteers": []
-        }
-        database["Available_Shifts"] = [0] * role_cnt
-        grid = database["Volunteers"]
-        for i in range(shift_cnt):
-            if i < shift_cnt - 1:
-                grid.append([0] * role_cnt)
-            else:
-                grid.append([0] * (role_cnt - 2))
-        status_code = getVolunteers(driver)
-        if status_code == 0:
-            database["Active"] = True
-            with open("volunteer_schedule.json", "w", encoding="utf-8") as file:
-                file.write(json.dumps(database))
-        elif status_code == -1:
-            database["Active"] = False
-            with open("volunteer_schedule.json", "w", encoding="utf-8") as file:
-                file.write(json.dumps(database))
+
+        print("aslafjalfaslf")
+        shift_data = getVolunteers(driver)
+        write_database(conn, cursor, shift_data)
+
+        cursor.close()
+        conn.close()
+
         print(f"[{str(datetime.now(ZoneInfo(timezone)))}] loop done")
     except Exception as e:
         print(e)
