@@ -1,4 +1,13 @@
 -- CreateTable
+CREATE TABLE `Dispatcher` (
+    `id` VARCHAR(191) NOT NULL DEFAULT (UUID()),
+    `name` VARCHAR(191) NOT NULL,
+    `shift_date` DATETIME(3) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
 CREATE TABLE `Shift_Type` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(191) NOT NULL,
@@ -9,11 +18,11 @@ CREATE TABLE `Shift_Type` (
 
 -- CreateTable
 CREATE TABLE `Shift` (
-    `id` VARCHAR(191) NOT NULL,
+    `id` VARCHAR(191) NOT NULL DEFAULT (UUID()),
     `shift_type_id` INTEGER NOT NULL,
-    `shift_start_hour` INTEGER NOT NULL,
+    `shift_start_hour` VARCHAR(191) NOT NULL,
     `signed_up` INTEGER NOT NULL,
-    `capcity` INTEGER NOT NULL,
+    `capacity` INTEGER NOT NULL,
     `shift_date` DATETIME(3) NOT NULL,
 
     PRIMARY KEY (`id`)

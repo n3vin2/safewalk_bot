@@ -36,6 +36,12 @@ model User {
 	authenticated_at DateTime @default(now())
 }
 
+model Dispatcher {
+	id String @id @default(dbgenerated("(UUID())"))
+	name String
+	shift_date DateTime
+}
+
 model Shift_Type {
 	id Int @id @default(autoincrement())
 	name String @unique
@@ -43,13 +49,13 @@ model Shift_Type {
 }
 
 model Shift {
-	id String @id @default(uuid())
+	id String @id @default(dbgenerated("(UUID())"))
 
 	shift_type_id Int
 	shift_type Shift_Type @relation(fields: [shift_type_id], references: [id])
-	
-	shift_start_hour Int
+
+	shift_start_hour String
 	signed_up Int
-	capcity Int
+	capacity Int
 	shift_date DateTime
 }

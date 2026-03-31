@@ -12,7 +12,7 @@ const adapter = new PrismaMariaDb({
 const prisma = new PrismaClient({ adapter });
 
 const SHIFT_TYPES = [
-    { name: "Patrol" },
+    { name: "Patroller" },
     { name: "Study" },
     { name: "Trainer" },
     { name: "Trainee" }
