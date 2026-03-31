@@ -35,3 +35,21 @@ model User {
 	email String @unique
 	authenticated_at DateTime @default(now())
 }
+
+model Shift_Type {
+	id Int @id @default(autoincrement())
+	name String @unique
+	shifts Shift[]
+}
+
+model Shift {
+	id String @id @default(uuid())
+
+	shift_type_id Int
+	shift_type Shift_Type @relation(fields: [shift_type_id], references: [id])
+	
+	shift_start_hour Int
+	signed_up Int
+	capcity Int
+	shift_date DateTime
+}
