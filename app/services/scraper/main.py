@@ -90,29 +90,30 @@ def getVolunteers(driver):
 
     for day in soup.find_all("div", class_="marginAllHalf"):
         current_date = datetime.now(ZoneInfo(timezone)).strftime("%Y-%m-%d")
-        if day.table["data-date"] == current_date:
-            shift_type = None
-            for cell in day.table.tbody.find_all("tr"):
-                if "shiftRow" in cell["class"]:
-                    shift_type_text = cell.find("td", class_="activityNameColumn").a.text
-                    if shift_type_text.endswith("Dispatcher"):
-                        shift_type = "d"
-                    else:
-                        shift_time_element = cell.select_one("td.timeColumn.startTime").text
-                        shift_type = shift_type_text.split(" ")[3]
+        if day.table["data-date"] != current_date:
+            continue
+        shift_type = None
+        for cell in day.table.tbody.find_all("tr"):
+            if "shiftRow" in cell["class"]:
+                shift_type_text = cell.find("td", class_="activityNameColumn").a.text
+                if shift_type_text.endswith("Dispatcher"):
+                    shift_type = "d"
+                else:
+                    shift_time_element = cell.select_one("td.timeColumn.startTime").text
+                    shift_type = shift_type_text.split(" ")[3]
 
-                        if shift_type in role_index_mapping:
-                            shift_type = role_index_mapping[shift_type]
-                            shift_time = time_index_mapping[shift_time_element]
+                    if shift_type in role_index_mapping:
+                        shift_type = role_index_mapping[shift_type]
+                        shift_time = time_index_mapping[shift_time_element]
 
-                            database["Available_Shifts"][shift_type] = 1
-                            numCapacity = cell.select_one('td.numberColumn:has(span[title="Maximum Volunteers"])').span.text
-                            num_signedUp = cell.select_one("td.numberColumn.shiftConfirmedTd").span.text
-                            grid[shift_time][shift_type] = num_signedUp + "/" + numCapacity
-                if shift_type == "d" and "volunteerRow" in cell["class"]:
-                    dispatcherName = cell.find("td", class_="firstName").text.strip()
-                    database["Dispatchers"].append(dispatcherName)
-            return 0
+                        database["Available_Shifts"][shift_type] = 1
+                        numCapacity = cell.select_one('td.numberColumn:has(span[title="Maximum Volunteers"])').span.text
+                        num_signedUp = cell.select_one("td.numberColumn.shiftConfirmedTd").span.text
+                        grid[shift_time][shift_type] = num_signedUp + "/" + numCapacity
+            if shift_type == "d" and "volunteerRow" in cell["class"]:
+                dispatcherName = cell.find("td", class_="firstName").text.strip()
+                database["Dispatchers"].append(dispatcherName)
+        return 0
     return -1
 
 timezone = os.getenv("time_zone")
