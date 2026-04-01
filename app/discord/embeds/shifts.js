@@ -1,5 +1,4 @@
 import { ContainerBuilder } from "discord.js"
-import { getShift } from "../../services/shifts.js"
 import { getDispatchers } from "../../services/dispatchers.js"
 import { getCurrentTimeZone } from "../../services/time/timezone.js"
 import { prisma } from "../../services/db.js"
@@ -22,8 +21,7 @@ const buildShiftText = (shift) => {
     return `${shift.shift_type_name.padEnd(shift_type_length, " ")}${getStatus(shift.signed_up, shift.capacity).padEnd(shift_status_length, " ")}(${shift.signed_up}/${shift.capacity})`;
 }
 
-export const buildPingComponent = async (role_id) => {
-    const shifts = await getShift();
+export const buildPingComponent = async (role_id, shifts) => {
     const dispatchers = await getDispatchers();
 
     const today = getCurrentTimeZone(new Date());

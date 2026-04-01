@@ -7,7 +7,10 @@ export const getShift = async () => {
         },
         orderBy: { shift_type: {id: "asc"} },
     });
+    return shifts;
+}
 
+export const groupShiftByTime = async (shifts) => {
     const shift_times = await prisma.shift_Time.findMany({
         orderBy: { time: "asc" }
     });

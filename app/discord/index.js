@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from 'node:path';
 import { prisma } from '../services/db.js';
 import { buildPingComponent } from './embeds/shifts.js';
+import { getShift, groupShiftByTime } from '../services/shifts.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -125,7 +126,13 @@ export const discordSetup = async () => {
 			const roles = await guild.roles.fetch();
 			const role = roles.find(r => r.name === "Patroller");
 			const channel = await client.channels.fetch(channel_entry.channel_id);
-			const pingComponent = await buildPingComponent(role.id);
+			const shifts = await getShift();
+
+			if (shifts.length === 0) {
+				console.log("shift length is 0")
+				return;
+			}
+			const pingComponent = await buildPingComponent(role.id, await groupShiftByTime(shifts));
 			if (channel_entry.message_id === null) {
 				const newMessage = await channel.send({ components: [pingComponent], flags: MessageFlags.IsComponentsV2 });
 				await prisma.channel.update(
