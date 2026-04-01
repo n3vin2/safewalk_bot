@@ -17,9 +17,18 @@ CREATE TABLE `Shift_Type` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
+CREATE TABLE `Shift_Time` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `time` VARCHAR(191) NOT NULL,
+
+    UNIQUE INDEX `Shift_Time_time_key`(`time`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
 CREATE TABLE `Shift` (
     `id` VARCHAR(191) NOT NULL DEFAULT (UUID()),
-    `shift_type_id` INTEGER NOT NULL,
+    `shift_type_name` VARCHAR(191) NOT NULL,
     `shift_start_hour` VARCHAR(191) NOT NULL,
     `signed_up` INTEGER NOT NULL,
     `capacity` INTEGER NOT NULL,
@@ -29,4 +38,7 @@ CREATE TABLE `Shift` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- AddForeignKey
-ALTER TABLE `Shift` ADD CONSTRAINT `Shift_shift_type_id_fkey` FOREIGN KEY (`shift_type_id`) REFERENCES `Shift_Type`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `Shift` ADD CONSTRAINT `Shift_shift_type_name_fkey` FOREIGN KEY (`shift_type_name`) REFERENCES `Shift_Type`(`name`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Shift` ADD CONSTRAINT `Shift_shift_start_hour_fkey` FOREIGN KEY (`shift_start_hour`) REFERENCES `Shift_Time`(`time`) ON DELETE RESTRICT ON UPDATE CASCADE;

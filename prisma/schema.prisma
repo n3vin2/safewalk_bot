@@ -48,13 +48,21 @@ model Shift_Type {
 	shifts Shift[]
 }
 
+model Shift_Time {
+	id Int @id @default(autoincrement())
+	time String @unique
+	shifts Shift[]
+}
+
 model Shift {
 	id String @id @default(dbgenerated("(UUID())"))
 
-	shift_type_id Int
-	shift_type Shift_Type @relation(fields: [shift_type_id], references: [id])
+	shift_type_name String
+	shift_type Shift_Type @relation(fields: [shift_type_name], references: [name])
 
 	shift_start_hour String
+	shift_time Shift_Time @relation(fields: [shift_start_hour], references: [time])
+
 	signed_up Int
 	capacity Int
 	shift_date DateTime
