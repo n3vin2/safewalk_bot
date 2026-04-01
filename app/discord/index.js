@@ -1,17 +1,11 @@
-import { Client, Collection, Events, GatewayIntentBits, MessageFlags, Partials } from 'discord.js';
+import { Client, Collection, GatewayIntentBits, MessageFlags, Partials } from 'discord.js';
 import { fileURLToPath } from 'node:url';
-import { readFile, writeFile } from 'node:fs/promises';
 import { getCurrentTimeZone } from '../services/time/timezone.js';
 import fs from "node:fs";
 import path from 'node:path';
 import { prisma } from '../services/db.js';
+import { buildPingComponent } from './embeds/shifts.js';
 
-const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const shiftTimes = ["7PM:", "8PM:", "9PM:"];
-const shiftTypes = ["Patroller", "Study", "Trainee", "Trainer"];
-const shiftTypesAbbreviated = ["P", "S", "Te", "Tr"];
-const shiftSpacings = [4, 5, 6, 6];
-const headerShiftSpacings = [14, 10, 9, 8];
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -110,69 +104,6 @@ async function importModals() {
 	}
 }
 
-function getColor(expression) {
-	if (expression === 0) {
-		return "⬛";
-	}
-	const val = eval(expression);
-	if (val === 0) {
-		return "🟩";
-	} else if (val > 0 && val < 1) {
-		return "🟨";
-	} else {
-		return "🟥";
-	}
-}
-
-function getMiddlePart(schedule) {
-	let legend = "";
-	let header = "";
-	let i = 0;
-	schedule.Available_Shifts.forEach((shift, index) => {
-		if (shift) {
-			legend += `${shiftTypesAbbreviated[index]} = ${shiftTypes[index]}\n`;
-			header += `${" ".repeat(headerShiftSpacings[i])}${shiftTypesAbbreviated[index]}`;
-			i++;
-		}
-	});
-	return legend + "\n" + header;
-}
-
-function getMessage(schedule, roleId) {
-	const today = getCurrentTimeZone(new Date());
-
-	const firstPart =  `
-Hi <@&${roleId}>, happy ${days[today.getDay()]}!\n
-Dispatcher: ${schedule.Dispatchers.join(", ")}\n
-🟩 = Vacant
-🟨 = Partially Filled
-🟥 = Filled
-⬛ = Unavailable
-\n
-${getMiddlePart(schedule)}
-`;
-	/*               P          S         Te        Tr */
-	let secondPart = ""
-	for (let i = 0; i < shiftTimes.length; i++) {
-		secondPart += `${shiftTimes[i]}`;
-		const volunteers = schedule.Volunteers[i];
-
-		let first = true;
-		volunteers.forEach((expression, index) => {
-			if (schedule.Available_Shifts[index]) {
-				if (first) {
-					secondPart += " ".repeat(shiftSpacings[0]) + getColor(expression);
-					first = !first;
-				} else {
-					secondPart += " ".repeat(shiftSpacings[index]) + getColor(expression);
-				}
-			}
-		});
-		secondPart += "\n\n";
-	}
-	return firstPart + secondPart;
-}
-
 export const discordSetup = async () => {
 	// Log in to Discord with your client's token
 	await client.login(token);
@@ -188,20 +119,15 @@ export const discordSetup = async () => {
 			return;
 		}
 
-		const database = await readFile("volunteer_schedule.json", "utf-8");
-		const schedule = JSON.parse(database);
-		if (!schedule.Active) {
-			return;
-		}
-
 		const registered_channels = await prisma.channel.findMany();
 		registered_channels.forEach(async (channel_entry) => {
 			const guild = await client.guilds.fetch(channel_entry.guild_id);
 			const roles = await guild.roles.fetch();
 			const role = roles.find(r => r.name === "Patroller");
 			const channel = await client.channels.fetch(channel_entry.channel_id);
+			const pingComponent = await buildPingComponent(role.id);
 			if (channel_entry.message_id === null) {
-				const newMessage = await channel.send(getMessage(schedule, role.id));
+				const newMessage = await channel.send({ components: [pingComponent], flags: MessageFlags.IsComponentsV2 });
 				await prisma.channel.update(
 					{
 						where: channel_entry,
@@ -215,7 +141,7 @@ export const discordSetup = async () => {
 				const message = await channel.messages.fetch(channel_entry.message_id);
 				const postDate = getCurrentTimeZone(new Date(message.createdTimestamp));
 				if (postDate.getDay() !== now.getDay()) {
-					const newMessage = await channel.send(getMessage(schedule, role.id));
+					const newMessage = await channel.send({ components: [pingComponent], flags: MessageFlags.IsComponentsV2 });
 					await prisma.channel.update(
 						{
 							where: channel_entry,
@@ -226,7 +152,7 @@ export const discordSetup = async () => {
 						}
 					);
 				} else {
-					const stat = await message.edit(getMessage(schedule, role.id));
+					const stat = await message.edit({ components: [pingComponent], flags: MessageFlags.IsComponentsV2 });
 				}
 			}
 		});
