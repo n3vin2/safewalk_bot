@@ -40,9 +40,7 @@ def get_role_id_mapping():
 
     cursor.execute("SELECT id, name FROM Shift_Type")
 
-    res = {}
-    for row in cursor.fetchall():
-        res[row["name"]] = row["id"]
+    res = set([row["name"] for row in cursor.fetchall()])
     
     conn.close()
     cursor.close()
@@ -55,13 +53,11 @@ def wipe_database(conn, cursor):
 
 def write_database(conn, cursor, shift_data):
     for dispatcher in shift_data["Dispatchers"]:
-        print("Writing to dispatcher")
         cursor.execute("INSERT INTO Dispatcher (name, shift_date) VALUES (%s, %s)", (dispatcher, shift_data["Time"]))
     conn.commit()
 
     for shift in shift_data["Available_Shifts"]:
-        print("Writing to shifts")
-        cursor.execute("INSERT INTO Shift (shift_type_id, shift_start_hour, signed_up, capacity, shift_date) VALUES (%s, %s, %s, %s, %s)", (shift["shift_type_id"], shift["shift_start_hour"], shift["signed_up"], shift["capacity"], shift_data["Time"]))
+        cursor.execute("INSERT INTO Shift (shift_type_name, shift_start_hour, signed_up, capacity, shift_date) VALUES (%s, %s, %s, %s, %s)", (shift["shift_type_name"], shift["shift_start_hour"], shift["signed_up"], shift["capacity"], shift_data["Time"]))
     conn.commit()
 
 def login(driver):
@@ -135,13 +131,11 @@ def getVolunteers(driver):
                     shift_type = shift_type_text.split(" ")[3]
 
                     if shift_type in role_id_mapping:
-                        shift_type_id = role_id_mapping[shift_type]
-
                         numCapacity = cell.select_one('td.numberColumn:has(span[title="Maximum Volunteers"])').span.text
                         num_signedUp = cell.select_one("td.numberColumn.shiftConfirmedTd").span.text
 
                         shift_data["Available_Shifts"].append({
-                            "shift_type_id": shift_type_id,
+                            "shift_type_name": shift_type,
                             "shift_start_hour": shift_time_element,
                             "signed_up": int(num_signedUp),
                             "capacity": int(numCapacity)
@@ -167,7 +161,6 @@ while True:
         driver.maximize_window()
         login(driver)
 
-        print("aslafjalfaslf")
         shift_data = getVolunteers(driver)
         write_database(conn, cursor, shift_data)
 
