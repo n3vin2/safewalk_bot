@@ -8,7 +8,7 @@ export const execute = async (interaction) => {
     const guildId = interaction.guildId;
     const isAdmin = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
     let userId;
-    const messagReply = {
+    const messageReply = {
         content: "",
         flags: MessageFlags.Ephemeral
     }
@@ -29,8 +29,8 @@ export const execute = async (interaction) => {
             });
 
             if (channel) {
-                messagReply.content = "This channel has already been set for pings."
-                await interaction.reply(messagReply);
+                messageReply.content = "This channel has already been set for pings."
+                await interaction.reply(messageReply);
                 return;
             }
 
@@ -38,16 +38,16 @@ export const execute = async (interaction) => {
                 data: channel_object
             });
             
-            messagReply.content = "This channel has been successfully set for pings!";
-            await interaction.reply(messagReply);
+            messageReply.content = "This channel has been successfully set for pings!";
+            await interaction.reply(messageReply);
 
         } else {
-            messagReply.content = "Insufficient permissions to run this command.";
-            await interaction.reply(messagReply);
+            messageReply.content = "Insufficient permissions to run this command.";
+            await interaction.reply(messageReply);
         }
     } catch (exception) {
         console.log(exception);
-        messagReply.content = "Something went wrong. Please try again.";
-        await interaction.reply(messagReply);
+        messageReply.content = "Something went wrong. Please try again.";
+        await interaction.reply(messageReply);
     }
 }

@@ -8,7 +8,7 @@ export const execute = async (interaction) => {
     const guildId = interaction.guildId;
     const isAdmin = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
     let userId;
-    const messagReply = {
+    const messageReply = {
         content: "",
         flags: MessageFlags.Ephemeral
     }
@@ -32,21 +32,21 @@ export const execute = async (interaction) => {
                 await prisma.channel.delete({
                     where: { guild_id_channel_id: channel_object }
                 });
-                messagReply.content = "This channel will no longer be set for pings.";
-                await interaction.reply(messagReply);
+                messageReply.content = "This channel will no longer be set for pings.";
+                await interaction.reply(messageReply);
                 return;
             }
 
-            messagReply.content = "This channel was not set for pings.";
-            await interaction.reply(messagReply);
+            messageReply.content = "This channel was not set for pings.";
+            await interaction.reply(messageReply);
             return;
         } else {
-            messagReply.content = "Insufficient permissions to run this command.";
-            await interaction.reply(messagReply);
+            messageReply.content = "Insufficient permissions to run this command.";
+            await interaction.reply(messageReply);
         }
     } catch (exception) {
         console.log(exception);
-        messagReply.content = "Something went wrong. Please try again.";
-        await interaction.reply(messagReply);
+        messageReply.content = "Something went wrong. Please try again.";
+        await interaction.reply(messageReply);
     }
 }
