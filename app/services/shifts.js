@@ -1,4 +1,5 @@
 import { prisma } from "./db.js";
+import { getCurrentTimeZone } from "./time/timezone.js";
 
 export const getShift = async () => {
     const shifts = await prisma.shift.findMany({
@@ -21,4 +22,15 @@ export const groupShiftByTime = async (shifts) => {
     );
 
     return res;
+}
+
+export const getShiftCredits = async (email) => {
+    const shift_credits = await prisma.shift_Credit.findMany({
+        where: {
+            user_email: email,
+            week: { lt: getCurrentTimeZone(new Date()) }
+        },
+        orderBy: { week: "asc" }
+    });
+    return shift_credits;
 }
