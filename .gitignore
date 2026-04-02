@@ -5,3 +5,4 @@ node_modules/
 *.sqlite
 /app/generated/prisma
 /generated/prisma
+*.json
