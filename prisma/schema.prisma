@@ -67,3 +67,13 @@ model Shift {
 	capacity Int
 	shift_date DateTime
 }
+
+model Shift_Credit {
+	id String @id @default(dbgenerated("(UUID())"))
+	
+	user_email String
+	week DateTime
+	credits Float?
+
+	@@unique([user_email, week])
+}
