@@ -53,11 +53,13 @@ def wipe_database(conn, cursor):
 
 def write_database(conn, cursor, shift_data):
     for dispatcher in shift_data["Dispatchers"]:
-        cursor.execute("INSERT INTO Dispatcher (name, shift_date) VALUES (%s, %s)", (dispatcher, shift_data["Time"]))
+        cursor.execute("INSERT INTO Dispatcher (name, shift_date) \
+                       VALUES (%s, %s)", (dispatcher, shift_data["Time"]))
     conn.commit()
 
     for shift in shift_data["Available_Shifts"]:
-        cursor.execute("INSERT INTO Shift (shift_type_name, shift_start_hour, signed_up, capacity, shift_date) VALUES (%s, %s, %s, %s, %s)", (shift["shift_type_name"], shift["shift_start_hour"], shift["signed_up"], shift["capacity"], shift_data["Time"]))
+        cursor.execute("INSERT INTO Shift (shift_type_name, shift_start_hour, signed_up, capacity, shift_date) \
+                       VALUES (%s, %s, %s, %s, %s)", (shift["shift_type_name"], shift["shift_start_hour"], shift["signed_up"], shift["capacity"], shift_data["Time"]))
     conn.commit()
 
 def login(driver):
