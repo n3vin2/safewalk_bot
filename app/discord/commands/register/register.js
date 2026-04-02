@@ -24,13 +24,9 @@ export const execute = async (interaction) => {
                 channel_id: channelId
             }
             
-            const channel = await prisma.channel.findUnique(
-                {
-                    where: {
-                        guild_id_channel_id: channel_object,
-                    }
-                }
-            );
+            const channel = await prisma.channel.findUnique({
+                where: { guild_id_channel_id: channel_object }
+            });
 
             if (channel) {
                 messagReply.content = "This channel has already been set for pings."
@@ -38,11 +34,9 @@ export const execute = async (interaction) => {
                 return;
             }
 
-            await prisma.channel.create(
-                {
-                    data: channel_object
-                }
-            );
+            await prisma.channel.create({
+                data: channel_object
+            });
             
             messagReply.content = "This channel has been successfully set for pings!";
             await interaction.reply(messagReply);

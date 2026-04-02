@@ -31,25 +31,19 @@ export const execute = async (interaction) => {
                     new ButtonBuilder().setCustomId("code").setLabel("Enter code").setStyle(ButtonStyle.Secondary)
                 )
             );
-        await user.send(
-            {
-                components: [container],
-                flags: MessageFlags.IsComponentsV2
-            }
-        );
-        await interaction.reply(
-            {
-                content: "I have sent the instructions in your DMs",
-                flags: MessageFlags.Ephemeral
-            }
-        );
+        await user.send({
+            components: [container],
+            flags: MessageFlags.IsComponentsV2
+        });
+        await interaction.reply({
+            content: "I have sent the instructions in your DMs",
+            flags: MessageFlags.Ephemeral
+        });
     } catch (exception) {
         console.log(exception);
-        await interaction.reply(
-            {
-                content: "Something went wrong. Please try again.",
-                flags: MessageFlags.Ephemeral
-            }
-        );
+        await interaction.reply({
+            content: "Something went wrong. Please try again.",
+            flags: MessageFlags.Ephemeral
+        });
     }
 }

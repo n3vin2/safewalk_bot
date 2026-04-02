@@ -135,29 +135,19 @@ export const discordSetup = async () => {
 			const pingComponent = await buildPingComponent(role.id, await groupShiftByTime(shifts));
 			if (channel_entry.message_id === null) {
 				const newMessage = await channel.send({ components: [pingComponent], flags: MessageFlags.IsComponentsV2 });
-				await prisma.channel.update(
-					{
-						where: channel_entry,
-						data: {
-							...channel_entry,
-							message_id: newMessage.id
-						}
-					}
-				);
+				await prisma.channel.update({
+					where: channel_entry,
+					data: { ...channel_entry, message_id: newMessage.id }
+				});
 			} else {
 				const message = await channel.messages.fetch(channel_entry.message_id);
 				const postDate = getCurrentTimeZone(new Date(message.createdTimestamp));
 				if (postDate.getDay() !== now.getDay()) {
 					const newMessage = await channel.send({ components: [pingComponent], flags: MessageFlags.IsComponentsV2 });
-					await prisma.channel.update(
-						{
-							where: channel_entry,
-							data: {
-								...channel_entry,
-								message_id: newMessage.id
-							}
-						}
-					);
+					await prisma.channel.update({
+						where: channel_entry,
+						data: { ...channel_entry, message_id: newMessage.id }
+					});
 				} else {
 					const stat = await message.edit({ components: [pingComponent], flags: MessageFlags.IsComponentsV2 });
 				}
