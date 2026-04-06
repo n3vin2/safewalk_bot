@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, ContainerBuilder, ButtonBuilder, ChannelType, MessageFlags, ButtonStyle } from "discord.js";
 
-export const data = new SlashCommandBuilder().setName("authenticate").setDescription("Authenticates discord user by linking them to their Better Impact email")
+export const data = new SlashCommandBuilder().setName("authenticate").setDescription("Authenticates discord user by linking them to their Safewalk email")
 
 const instructions = "### To link your Discord account to your Safewalk email, follow these instructions:\n\
 1. Click on the \"Enter Email\" button\n\

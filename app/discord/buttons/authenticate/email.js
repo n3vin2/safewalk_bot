@@ -12,7 +12,7 @@ export const execute = async (interaction) => {
 
     const emailInputLabel = new LabelBuilder()
             .setLabel("Enter your email")
-            .setDescription("Enter the email with which you signed up on BetterImpact")
+            .setDescription("Enter the email with which you signed up on Safewalk")
             .setTextInputComponent(emailInput);
 
     modal.addLabelComponents(emailInputLabel);

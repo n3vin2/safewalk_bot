@@ -26,7 +26,7 @@ const getCreditColor = (credit) => {
 export const buildCreditsComponent = async (credits) => {
     const total_credits = credits.reduce((acc, cur) => acc + (cur.credits !== null ? cur.credits * 10 : 0), 0);
     const total_count = credits.reduce((acc, cur) => acc + (cur.credits !== null ? 10 : 0), 0);
-    const percentage = (total_credits / total_count).toFixed(2) * 100
+    const percentage = Math.round((total_credits / total_count) * 100)
 
     const credit_emojis = credits.map(credit => credit.credits !== null ? getCreditColor(credit.credits) : emojis[not_counted_color])
 
