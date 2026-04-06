@@ -7,24 +7,31 @@ export const customId = "emailModal";
 
 export const execute = async (interaction) => {
     await interaction.deferReply();
+
+    const discord_user = await prisma.user.findUnique({
+        where: { discord_id: interaction.user.id }
+    });
+
+    if (discord_user) {
+        await interaction.editReply({
+            content: "Your Discord account is already linked to an email. You must unlink first.",
+            flags: MessageFlags.Ephemeral
+        });
+        return;
+    }
+
     const code = crypto.randomInt(0, 1000000).toString().padStart(6, "0");
     const email = interaction.fields.getTextInputValue("emailInput");
 
-    const already_used = await prisma.user.findUnique(
-        {
-            where: {
-                email: email
-            }
-        }
-    );
+    const already_used = await prisma.user.findUnique({
+        where: { email: email }
+    });
 
     if (already_used) {
-        await interaction.editReply(
-            {
-                content: "This email is already in use.",
-                flags: MessageFlags.Ephemeral
-            }
-        );
+        await interaction.editReply({
+            content: "This email is already in use with another Discord account.",
+            flags: MessageFlags.Ephemeral
+        });
         return;
     }
 
@@ -34,12 +41,10 @@ export const execute = async (interaction) => {
         The code to enter under the \"Enter code\" section of the Safewalk bot is ${code}. <strong>DO NOT SHARE THIS CODE WITH ANYONE!</strong>`;
         const res = await sendEmail(email, subject, body);
     } catch (exception) {
-        await interaction.editReply(
-            {
-                content: "The email you entered was invalid.",
-                flags: MessageFlags.Ephemeral
-            }
-        );
+        await interaction.editReply({
+            content: "The email you entered was invalid.",
+            flags: MessageFlags.Ephemeral
+        });
         return;
     }
 
@@ -50,35 +55,14 @@ export const execute = async (interaction) => {
         expiry: new Date(Date.now() + 10 * 60 * 1000)
     }
 
-    const discord_user = await prisma.authcode.findUnique(
-        {
-            where: {
-                discord_id: interaction.user.id
-            }
-        }
-    );
+    await prisma.authcode.upsert({
+        where: { discord_id: interaction.user.id },
+        update: new_auth_obj,
+        create: new_auth_obj
+    });
 
-    if (discord_user) {
-        await prisma.authcode.update(
-            {
-                where: {
-                    discord_id: interaction.user.id
-                },
-                data: new_auth_obj
-            }
-        );
-    } else {
-        await prisma.authcode.create(
-            {
-                data: new_auth_obj
-            }
-        );
-    }
-
-    await interaction.editReply(
-        {
-            content: "Successfully sent the code into your inbox!",
-            flags: MessageFlags.Ephemeral
-        }
-    );
+    await interaction.editReply({
+        content: "Successfully sent the code into your inbox!",
+        flags: MessageFlags.Ephemeral
+    });
 }
