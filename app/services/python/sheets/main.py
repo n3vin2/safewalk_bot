@@ -19,6 +19,16 @@ def get_connection():
         database = os.getenv("DATABASE_NAME")
     )
 
+def wipe_database():
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("DELETE FROM Shift_Credit")
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
 def upsert_shift_credit(email, weeks, credits):
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
@@ -69,6 +79,7 @@ sheet_id = SHEETS_ID
 num_weeks = 15
 
 while True:
+    wipe_database()
     sheet = client.open_by_key(sheet_id)
     worksheet = sheet.sheet1
 
@@ -81,5 +92,5 @@ while True:
             formatted_credits = format_weekly_credits(credits[i]["values"])
             print(formatted_credits)
             upsert_shift_credit(email.value, weeks, formatted_credits)
-    print("done")
-    time.sleep(5000)
+    print(f"[{str(datetime.now(ZoneInfo(timezone)))}] shift credit update done")
+    time.sleep(60 * 60 * 12)
