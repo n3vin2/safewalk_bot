@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, MessageFlags } from "discord.js";
+import { SlashCommandBuilder, ChatInputCommandInteraction, MessageFlags, ChannelType } from "discord.js";
 import { prisma } from "../../../services/db.js"
 import { getShiftCredits } from "../../../services/shifts.js";
 import { buildCreditsComponent } from "../../embeds/shfit_credits.js";
@@ -28,11 +28,29 @@ export const execute = async (interaction) => {
         }
 
         const shift_credits = await getShiftCredits(discord_user.email);
+
+        if (shift_credits.length === 0) {
+            messageReply.content = "The email you have provided is not linked to a Safewalk account."
+            messageReply.flags = MessageFlags.Ephemeral
+            await interaction.reply(messageReply);
+            return;
+        }
         const shift_credits_component = await buildCreditsComponent(shift_credits);
-        await interaction.reply({
+
+        if (interaction.channel.type === ChannelType.DM) {
+            await interaction.reply({
+                components: [shift_credits_component],
+                flags: MessageFlags.IsComponentsV2
+            });
+            return;
+        }
+        await user.send({
             components: [shift_credits_component],
             flags: MessageFlags.IsComponentsV2
         });
+        messageReply.content = "I have sent the shift credits into your DMs."
+        messageReply.flags = MessageFlags.Ephemeral
+        await interaction.reply(messageReply)
     } catch (exception) {
         console.log(exception);
         messageReply.content = "Something went wrong. Please try again.";
