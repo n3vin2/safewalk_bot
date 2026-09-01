@@ -13,9 +13,13 @@ The bot was made using Discord.js with a Prisma ORM. Furthermore, it pairs with 
 - One of the scripts obtains data from a spreadsheet tracking volunteer's shift credits
 - The other script scrapes shift data on BetterImpact using Selenium
 
-The bot uses a MySQL database to store the data from the Python scripts. Currently, the database is in another repository due to the several projects potentially requiring the data. \
-**Do not run `prisma migrate dev` / `prisma migrate deploy`
-anymore.**
+The bot uses a SQLite database (a single local file, managed by Prisma in this repository) to store the data from the Python scripts. The bot and both Python scripts must point at the same database file via `DATABASE_URL` in `.env`, using an absolute path since the processes run from different directories:
+
+```
+DATABASE_URL="file:/absolute/path/to/safewalk.db"
+```
+
+The database uses WAL mode with a busy timeout so the three processes can safely share the file.
 
 The bot also utilizes AWS SES to send emails, so configure an AWS SES service, and own a domain to start the bot.
 
@@ -30,15 +34,15 @@ Install dependencies using
 npm i
 ```
 \
-To pick up a database schema change (after a new migration is applied), run the following command:
+Set `DATABASE_URL` in `.env`, then create the database and apply the migrations:
 
 ```bash
-npx prisma db pull
+npx prisma migrate deploy
 npx prisma generate
+npx prisma db seed
 ```
 
-Note `db pull` will also pull in tables owned by other apps (`team`,
-`team_ping`) — that's harmless.
+(For development, `npx prisma migrate dev` does all three in one step.)
 
 Once the database migrations are applied, you can start the bot using the following command:
 

@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-    provider = "mysql"
+    provider = "sqlite"
 }
 
 model Authcode {
@@ -37,7 +37,7 @@ model User {
 }
 
 model Dispatcher {
-	id String @id @default(dbgenerated("(UUID())"))
+	id String @id @default(uuid())
 	name String
 	shift_date DateTime
 }
@@ -55,7 +55,7 @@ model Shift_Time {
 }
 
 model Shift {
-	id String @id @default(dbgenerated("(UUID())"))
+	id String @id @default(uuid())
 
 	shift_type_name String
 	shift_type Shift_Type @relation(fields: [shift_type_name], references: [name])
@@ -69,7 +69,7 @@ model Shift {
 }
 
 model Shift_Credit {
-	id String @id @default(dbgenerated("(UUID())"))
+	id String @id @default(uuid())
 	
 	user_email String
 	week DateTime

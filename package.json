@@ -5,14 +5,12 @@
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.1006.0",
-    "@prisma/adapter-mariadb": "^7.5.0",
+    "@prisma/adapter-better-sqlite3": "^7.10.0",
     "@prisma/client": "^7.5.0",
     "discord.js": "^14.25.1"
   },
   "devDependencies": {
-    "@prisma/adapter-pg": "^7.6.0",
     "@types/node": "^25.5.0",
-    "@types/pg": "^8.20.0",
     "dotenv": "^17.3.1",
     "prisma": "^7.5.0",
     "tsx": "^4.21.0",

@@ -2,46 +2,56 @@ import gspread
 from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv
 import os
-import mysql.connector
+import sqlite3
+import uuid
 import time
-from datetime import datetime
+# aliased because the module-level `timezone` variable below shadows the name
+from datetime import datetime, timezone as dt_timezone
 from zoneinfo import ZoneInfo
 
 load_dotenv()
 SHEETS_ID = os.getenv("SHEETS_ID")
 timezone = os.getenv("time_zone")
+DB_PATH = os.getenv("DATABASE_URL", "").removeprefix("file:")
 
 def get_connection():
-    return mysql.connector.connect(
-        host = os.getenv("DATABASE_HOST"),
-        user = os.getenv("DATABASE_USER"),
-        password = os.getenv("DATABASE_PASSWORD"),
-        database = os.getenv("DATABASE_NAME")
-    )
+    conn = sqlite3.connect(DB_PATH, timeout=5)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=5000")
+    conn.execute("PRAGMA foreign_keys=ON")
+    return conn
+
+def to_db_datetime(dt):
+    # Prisma stores DateTime as ISO-8601 UTC text (e.g. 2026-08-31T04:05:06.123+00:00);
+    # comparisons in the bot rely on every row using this exact format
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=dt_timezone.utc)
+    return dt.astimezone(dt_timezone.utc).isoformat(timespec="milliseconds")
 
 def wipe_database():
     conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    cursor.execute("DELETE FROM Shift_Credit")
-    conn.commit()
-
-    cursor.close()
-    conn.close()
+    try:
+        conn.execute("DELETE FROM Shift_Credit")
+        conn.commit()
+    finally:
+        conn.close()
 
 def upsert_shift_credit(email, weeks, credits):
     conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor = conn.cursor()
 
+        for i, credit in enumerate(credits):
+            cursor.execute("INSERT INTO Shift_Credit (id, user_email, week, credits) \
+                            VALUES (?, ?, ?, ?) \
+                            ON CONFLICT(user_email, week) DO UPDATE SET credits = excluded.credits",
+                           (str(uuid.uuid4()), email, to_db_datetime(weeks[i]), credit))
+        conn.commit()
 
-    for i, credit in enumerate(credits):
-        cursor.execute("INSERT INTO Shift_Credit (user_email, week, credits) \
-                        VALUES (%s, %s, %s) \
-                        ON DUPLICATE KEY UPDATE credits = VALUES(credits)", (email, weeks[i], credit))
-    conn.commit()
-
-    cursor.close()
-    conn.close()
+        cursor.close()
+    finally:
+        conn.close()
 
 def get_weeks(worksheet):
     weeks = []
