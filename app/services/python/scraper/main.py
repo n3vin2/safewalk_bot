@@ -37,12 +37,12 @@ def get_connection():
     conn.execute("PRAGMA foreign_keys=ON")
     return conn
 
-def to_db_datetime(dt):
-    # Prisma stores DateTime as ISO-8601 UTC text (e.g. 2026-08-31T04:05:06.123+00:00);
+def to_db_timestamp(dt):
+    # Prisma 6 stores DateTime in SQLite as integer epoch milliseconds;
     # comparisons in the bot rely on every row using this exact format
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=dt_timezone.utc)
-    return dt.astimezone(dt_timezone.utc).isoformat(timespec="milliseconds")
+    return int(dt.timestamp() * 1000)
 
 def get_role_id_mapping():
     conn = get_connection()
@@ -64,7 +64,7 @@ def wipe_database(conn, cursor):
     conn.commit()
 
 def write_database(conn, cursor, shift_data):
-    shift_date = to_db_datetime(shift_data["Time"])
+    shift_date = to_db_timestamp(shift_data["Time"])
 
     for dispatcher in shift_data["Dispatchers"]:
         cursor.execute("INSERT INTO Dispatcher (id, name, shift_date) \

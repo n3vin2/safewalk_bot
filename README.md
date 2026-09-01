@@ -13,13 +13,13 @@ The bot was made using Discord.js with a Prisma ORM. Furthermore, it pairs with 
 - One of the scripts obtains data from a spreadsheet tracking volunteer's shift credits
 - The other script scrapes shift data on BetterImpact using Selenium
 
-The bot uses a SQLite database (a single local file, managed by Prisma in this repository) to store the data from the Python scripts. The bot and both Python scripts must point at the same database file via `DATABASE_URL` in `.env`, using an absolute path since the processes run from different directories:
+The bot uses a SQLite database (a single local file, managed by Prisma in this repository) to store the data from the Python scripts. The bot and both Python scripts point at the same database file via `DATABASE_URL` in `.env`:
 
 ```
-DATABASE_URL="file:/absolute/path/to/safewalk.db"
+DATABASE_URL="file:./safewalk.db?connection_limit=1"
 ```
 
-The database uses WAL mode with a busy timeout so the three processes can safely share the file.
+A relative path is resolved against the `prisma/` directory (Prisma's convention for SQLite URLs — the Python scripts mirror it), so the default above puts the database at `prisma/safewalk.db`. An absolute path also works. The database uses WAL mode with a busy timeout, and `connection_limit=1` keeps Prisma on a single connection, so the three processes can safely share the file.
 
 The bot also utilizes AWS SES to send emails, so configure an AWS SES service, and own a domain to start the bot.
 

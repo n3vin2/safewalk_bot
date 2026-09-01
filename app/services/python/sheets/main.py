@@ -22,12 +22,12 @@ def get_connection():
     conn.execute("PRAGMA foreign_keys=ON")
     return conn
 
-def to_db_datetime(dt):
-    # Prisma stores DateTime as ISO-8601 UTC text (e.g. 2026-08-31T04:05:06.123+00:00);
+def to_db_timestamp(dt):
+    # Prisma 6 stores DateTime in SQLite as integer epoch milliseconds;
     # comparisons in the bot rely on every row using this exact format
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=dt_timezone.utc)
-    return dt.astimezone(dt_timezone.utc).isoformat(timespec="milliseconds")
+    return int(dt.timestamp() * 1000)
 
 def wipe_database():
     conn = get_connection()
@@ -46,7 +46,7 @@ def upsert_shift_credit(email, weeks, credits):
             cursor.execute("INSERT INTO Shift_Credit (id, user_email, week, credits) \
                             VALUES (?, ?, ?, ?) \
                             ON CONFLICT(user_email, week) DO UPDATE SET credits = excluded.credits",
-                           (str(uuid.uuid4()), email, to_db_datetime(weeks[i]), credit))
+                           (str(uuid.uuid4()), email, to_db_timestamp(weeks[i]), credit))
         conn.commit()
 
         cursor.close()
