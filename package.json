@@ -3,16 +3,17 @@
   "scripts": {
     "start": "node --env-file=.env app/index.js"
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.1006.0",
-    "@prisma/adapter-better-sqlite3": "^7.10.0",
-    "@prisma/client": "^7.5.0",
+    "@prisma/client": "^6.19.3",
     "discord.js": "^14.25.1"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
-    "dotenv": "^17.3.1",
-    "prisma": "^7.5.0",
+    "prisma": "^6.19.3",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
