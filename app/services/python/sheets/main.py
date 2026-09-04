@@ -1,5 +1,4 @@
 import gspread
-from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv
 import os
 import sqlite3
@@ -81,8 +80,11 @@ def format_weekly_credits(raw_weekly_credits):
 scopes =[
     "https://www.googleapis.com/auth/spreadsheets"
 ]
-creds = Credentials.from_service_account_file("credentials.json", scopes=scopes)
-client = gspread.authorize(creds)
+client = gspread.oauth(
+    scopes=scopes,
+    credentials_filename="oauth_credentials.json",
+    authorized_user_filename="authorized_user.json",
+)
 
 sheet_id = SHEETS_ID
 
